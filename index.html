@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anonimizador de Datos — v11 (RGPD/LOPDGDD)</title>
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff5a5f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Anonimizador">
+<meta name="description" content="Pseudonimización y anonimización de hojas de cálculo conforme al RGPD y LOPDGDD. 100% local en el navegador, sin servidor, sin trazas.">
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+  /* ── Variables Base (Estética v3) ── */
+  :root {
+    --coral: #ff5a5f; --coral-d: #e63946; --ink: #1d2b3a; --slate: #5a6b7b;
+    --bg: #f5f7fa; --card: #ffffff; --line: #e3e8ee;
+    --ok: #16a34a; --okbg: #dcfce7; --warn: #b45309; --warnbg: #fef3c7;
+    --danger: #dc2626; --dangerbg: #fee2e2;
+    --radius: 16px; --shadow: 0 8px 28px rgba(29, 43, 58, 0.10);
+  }
+  [data-theme="dark"] {
+    --ink: #e6edf3; --slate: #9fb0c0; --bg: #0d1117; --card: #161b22; --line: #30363d;
+    --okbg: #0d3a1f; --warnbg: #3a2c0d; --dangerbg: #3a1414;
+    --shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.55; padding: 32px 16px; min-height: 100vh;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 24px; position: relative; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.55rem; letter-spacing: -.02em; }
+  .logo .dot { width: 14px; height: 14px; border-radius: 4px; background: var(--coral); transform: rotate(45deg); }
+  .ver { font-size: .7rem; color: var(--slate); font-weight: 600; margin-left: 4px; }
+  header p { color: var(--slate); margin-top: 6px; font-size: .95rem; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--okbg); color: var(--ok);
+    font-size: .78rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; margin-top: 12px;
+  }
+  .theme-tog {
+    position: absolute; top: 0; right: 0; background: transparent; border: 1px solid var(--line);
+    border-radius: 999px; width: 36px; height: 36px; cursor: pointer; color: var(--ink); font-size: 1rem;
+  }
+
+  /* ── Tarjetas ── */
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 24px; margin-bottom: 18px;
+  }
+  
+  /* ── Drag & Drop ── */
+  .drop {
+    border: 2px dashed #cdd6e0; border-radius: var(--radius); padding: 40px 20px; text-align: center;
+    cursor: pointer; transition: .18s; background: transparent;
+  }
+  [data-theme="dark"] .drop { border-color: #444c56; }
+  .drop:hover, .drop.over { border-color: var(--coral); background: rgba(255, 90, 95, .05); }
+  .drop svg { width: 42px; height: 42px; color: var(--coral); margin-bottom: 10px; }
+  .drop strong { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  .drop span { color: var(--slate); font-size: .88rem; }
+  input[type=file] { display: none; }
+  .hidden { display: none !important; }
+
+  /* ── Tipografía y utilidades ── */
+  h2 { font-size: 1.1rem; margin-bottom: 4px; }
+  h3 { font-size: .95rem; margin: 14px 0 6px; color: var(--slate); text-transform: uppercase; letter-spacing: .05em; }
+  .sub { color: var(--slate); font-size: .86rem; margin-bottom: 14px; }
+  .filebar {
+    display: flex; align-items: center; gap: 12px; background: rgba(127,127,127,.08);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; font-size: .88rem;
+  }
+  .filebar .fi { flex: 1; font-weight: 600; word-break: break-all; }
+  .filebar .fz { color: var(--slate); font-size: .78rem; }
+
+  /* ── Configuración Columnas ── */
+  .cols { display: flex; flex-direction: column; gap: 6px; max-height: 450px; overflow: auto; padding-right: 4px; }
+  .col {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line);
+    border-radius: 11px; transition: .15s; flex-wrap: wrap;
+  }
+  .col.on { border-color: var(--coral); background: rgba(255, 90, 95, .05); }
+  .col.art9 { border-color: var(--danger); }
+  .col .name { flex: 1; font-weight: 600; font-size: .9rem; min-width: 140px; }
+  .col .meta { font-size: .72rem; color: var(--slate); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .col .type { font-size: .7rem; background: rgba(127,127,127,.15); padding: 2px 8px; border-radius: 6px; }
+  .col.on .type { background: var(--coral); color: #fff; }
+  .col.art9 .type { background: var(--danger); color: #fff; }
+  .col select, .col input[type=text] {
+    background: var(--card); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 5px 8px; font-size: .8rem; font-family: inherit;
+  }
+  .col select { min-width: 140px; }
+
+  /* ── Switcher ── */
+  .sw { position: relative; width: 40px; height: 23px; flex: none; }
+  .sw input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; }
+  .sw .tr { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; transition: .2s; }
+  .sw .tr:before { content: ""; position: absolute; width: 17px; height: 17px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .sw input:checked + .tr { background: var(--coral); }
+  .sw input:checked + .tr:before { transform: translateX(17px); }
+
+  /* ── Botones ── */
+  .btn {
+    display: block; width: 100%; border: none; border-radius: 12px; padding: 14px; font-size: 1rem;
+    font-weight: 700; cursor: pointer; transition: .18s; margin-top: 14px; font-family: inherit;
+  }
+  .btn-primary { background: var(--coral); color: #fff; }
+  .btn-primary:hover { background: var(--coral-d); }
+  .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .btn-ghost { background: rgba(127,127,127,.12); color: var(--ink); }
+  .btn-ghost:hover { background: rgba(127,127,127,.2); }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { margin-top: 0; }
+
+  /* ── Alertas y Notas ── */
+  .alert { padding: 12px 14px; border-radius: 10px; font-size: .84rem; margin: 10px 0; display: flex; gap: 10px; align-items: flex-start; }
+  .alert.warn { background: var(--warnbg); color: var(--warn); border: 1px solid var(--warn); }
+  .alert.danger { background: var(--dangerbg); color: var(--danger); border: 1px solid var(--danger); }
+  .alert.ok { background: var(--okbg); color: var(--ok); border: 1px solid var(--ok); }
+  .check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; font-size: .9rem; padding: 8px 0; }
+  .check input { margin-top: 3px; cursor: pointer; accent-color: var(--coral); }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media(max-width: 600px) { .opts { grid-template-columns: 1fr; } }
+  .opts .check { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+
+  /* ── Elementos UI adicionales ── */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: sp .8s linear infinite; vertical-align: -2px; margin-right: 6px;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .progress { height: 6px; background: rgba(127,127,127,.15); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .progress > div { height: 100%; background: var(--coral); transition: width .2s; }
+  .pill { display: inline-block; font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: rgba(127,127,127,.15); margin-left: 6px; }
+  .pill.art9 { background: var(--danger); color: #fff; }
+  .pill.cuasi { background: var(--warn); color: #fff; }
+  details { margin: 8px 0; }
+  details summary { cursor: pointer; font-weight: 600; font-size: .88rem; color: var(--coral); padding: 4px 0; }
+  
+  /* ── Layout Archivos Superior (v6) ── */
+  .sidebar-layout { display: flex; flex-direction: column; gap: 24px; }
+  .file-sidebar {
+    width: 100%; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px; height: fit-content;
+  }
+  .file-sidebar h3 { font-size: 1rem; margin-top: 0; margin-bottom: 12px; }
+  .file-list { display: contents; }
+  .file-item {
+    padding: 8px 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line);
+    display: flex; gap: 12px; justify-content: space-between; align-items: center; font-size: .85rem; transition: .15s;
+  }
+  .file-item:hover { border-color: var(--coral); }
+  .file-item.active { background: var(--coral); color: #fff; border-color: var(--coral); font-weight: 600; }
+  .file-item.active .pill { background: rgba(255,255,255,.2); color: #fff; }
+  .main-panel { width: 100%; min-width: 0; }
+
+  /* ── Tabs de Hojas ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); overflow: auto; }
+  .tab {
+    padding: 10px 16px; background: transparent; border: none; color: var(--slate); font-weight: 600;
+    font-size: .9rem; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: .15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--coral); border-bottom-color: var(--coral); }
+
+  /* ── Sección Legal (v3) ── */
+  .legal {
+    background: var(--warnbg); border: 1px solid var(--warn); border-radius: 12px; padding: 16px 20px;
+    font-size: .83rem; color: var(--ink); max-height: 380px; overflow: auto; margin-bottom: 16px;
+  }
+  .legal h3 { color: var(--warn); margin-top: 14px; letter-spacing: 0; font-weight: 700; }
+  .legal h3:first-child { margin-top: 0; }
+  .legal p, .legal li { margin: 8px 0; line-height: 1.5; }
+  .legal ul { padding-left: 20px; }
+  .legal code { background: rgba(127,127,127,.15); padding: 2px 6px; border-radius: 4px; font-size: .78rem; }
+  .warning-macro { background: var(--warnbg); border-left: 4px solid var(--warn); padding: 10px 14px; margin: 10px 0; border-radius: 0 10px 10px 0; font-size: .85rem; }
+
+  /* ── Inputs extra y Granularidad ── */
+  .flex-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+  .small-input { flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-family: inherit; font-size: .85rem; }
+  .granularity {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0; background: rgba(127,127,127,.04);
+    padding: 12px; border-radius: 12px; border: 1px solid var(--line); font-size: .85rem;
+  }
+  .granularity select { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: .85rem; }
+
+  /* ── Vista Previa Tabla ── */
+  .scroll-x { overflow-x: auto; max-width: 100%; }
+  table.prev { width: 100%; border-collapse: collapse; font-size: .78rem; margin-top: 10px; }
+  table.prev th, table.prev td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  table.prev th { background: rgba(127,127,127,.08); font-weight: 700; }
+  table.prev td.changed { background: rgba(255, 90, 95, .12); color: var(--coral-d); font-weight: 600; }
+
+  /* ── Finalización ── */
+  .done { text-align: center; padding: 20px; }
+  .done .ic { width: 64px; height: 64px; border-radius: 50%; background: var(--okbg); color: var(--ok); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .done .ic svg { width: 32px; height: 32px; }
+  .files-list { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; max-height: 250px; overflow: auto; text-align: left; }
+
+  /* ── Botón Ayuda Flotante (v3) ── */
+  .help-btn {
+    position: fixed; bottom: 28px; right: 28px; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--coral); color: #fff; border: none; font-size: 1.4rem; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255, 90, 95, .45); transition: .2s; z-index: 900; display: flex; align-items: center; justify-content: center;
+  }
+  .help-btn:hover { background: var(--coral-d); transform: scale(1.08); }
+
+  /* ── Modal Overlay ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--card); border-radius: 20px; width: 100%; max-width: 800px; max-height: 90vh;
+    display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,.28); overflow: hidden;
+    transform: translateY(18px); transition: transform .22s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-head { display: flex; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--line); flex: none; }
+  .modal-head h2 { flex: 1; font-size: 1.15rem; margin: 0; }
+  .modal-close {
+    background: transparent; border: none; color: var(--slate); font-size: 1.4rem; cursor: pointer;
+    width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: rgba(127,127,127,.15); color: var(--ink); }
+  .modal-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); flex: none; overflow-x: auto; }
+  .modal-tab {
+    padding: 12px 20px; background: transparent; border: none; color: var(--slate); font-weight: 600;
+    font-size: .9rem; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-family: inherit;
+  }
+  .modal-tab.active { color: var(--coral); border-bottom-color: var(--coral); }
+  .modal-body { overflow-y: auto; padding: 0; flex: 1; }
+  .modal-section { padding: 24px; display: none; }
+  .modal-section.active { display: block; }
+  
+  /* ── Modal Review PII (Texto Libre) ── */
+  .pii-finding {
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px;
+    background: rgba(127,127,127,.03); display: flex; align-items: flex-start; gap: 12px;
+  }
+  .pii-finding .check { margin: 0; padding: 0; }
+  .pii-details { flex: 1; font-size: .85rem; }
+  .pii-loc { font-weight: 600; color: var(--slate); margin-bottom: 4px; display: block; }
+  .pii-context { background: var(--card); padding: 8px; border-radius: 8px; border: 1px solid var(--line); margin-top: 4px; word-break: break-all; }
+  .pii-mark { background: var(--warnbg); color: var(--warn); font-weight: bold; padding: 0 3px; border-radius: 3px; }
+
+  /* ── Tarjetas de ayuda y links legales (v3) ── */
+  .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  @media(max-width: 580px) { .help-grid { grid-template-columns: 1fr; } }
+  .help-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; transition: .15s; }
+  .help-card:hover { border-color: var(--coral); background: rgba(255, 90, 95, .04); }
+  .help-card .hc-icon { font-size: 1.6rem; margin-bottom: 8px; }
+  .help-card .hc-title { font-weight: 700; font-size: .95rem; margin-bottom: 4px; }
+  .help-card .hc-desc { font-size: .82rem; color: var(--slate); line-height: 1.5; }
+  .help-card .hc-ex { font-size: .76rem; font-family: monospace; background: rgba(127,127,127,.12); padding: 3px 7px; border-radius: 5px; margin-top: 8px; display: inline-block; color: var(--ink); }
+  .help-card.highlight { border-color: var(--coral); background: rgba(255, 90, 95, .05); }
+  .legal-link { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; text-decoration: none; color: var(--ink); transition: .15s; }
+  .legal-link:hover { border-color: var(--coral); background: rgba(255, 90, 95, .04); }
+  .legal-link .ll-icon { font-size: 1.6rem; flex: none; margin-top: 2px; }
+  .legal-link .ll-body .ll-title { font-weight: 700; font-size: .92rem; margin-bottom: 2px; }
+  .legal-link .ll-body .ll-sub { font-size: .78rem; color: var(--slate); }
+  .legal-link .ll-body .ll-url { font-size: .72rem; color: var(--coral); word-break: break-all; margin-top: 4px; }
+  .help-divider { border: none; border-top: 1px solid var(--line); margin: 24px 0; }
+  .help-note { font-size: .8rem; color: var(--slate); background: rgba(127,127,127,.07); border-radius: 10px; padding: 12px 16px; margin-top: 16px; }
+
+  /* ── Indicador de Protección (v9) ── */
+  .risk-card {
+    display: flex; gap: 20px; align-items: center; border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 20px; margin: 14px 0; background: rgba(127,127,127,.03);
+  }
+  .risk-ring { position: relative; width: 96px; height: 96px; flex: none; }
+  .risk-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .rr-bg { fill: none; stroke: rgba(127,127,127,.15); stroke-width: 10; }
+  .rr-fg {
+    fill: none; stroke: var(--ok); stroke-width: 10; stroke-linecap: round;
+    stroke-dasharray: 326.7; stroke-dashoffset: 326.7;
+    transition: stroke-dashoffset .7s cubic-bezier(.22,1,.36,1), stroke .4s;
+  }
+  .risk-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; }
+  .risk-num small { font-size: .7rem; font-weight: 700; color: var(--slate); margin-left: 1px; }
+  .risk-info { flex: 1; min-width: 0; }
+  .risk-title { font-weight: 700; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+  .risk-sub { font-size: .8rem; color: var(--slate); margin: 3px 0 9px; }
+  .risk-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .risk-chip { font-size: .74rem; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: rgba(127,127,127,.1); }
+  .risk-chip.good { background: var(--okbg); color: var(--ok); }
+  .risk-chip.mid { background: var(--warnbg); color: var(--warn); }
+  .risk-chip.bad { background: var(--dangerbg); color: var(--danger); }
+  @media(max-width: 560px) { .risk-card { flex-direction: column; text-align: center; } .risk-chips { justify-content: center; } }
+
+  /* ── Perfiles rápidos (v11) ── */
+  .profiles { margin: 16px 0; }
+  .profiles-head { font-size: .78rem; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .profile-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media(max-width: 780px) { .profile-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media(max-width: 420px) { .profile-grid { grid-template-columns: 1fr; } }
+  .profile-card {
+    border: 1px solid var(--line); border-radius: 13px; padding: 13px 14px; cursor: pointer;
+    transition: .16s; background: var(--card); text-align: left; font-family: inherit; color: var(--ink);
+  }
+  .profile-card:hover { border-color: var(--coral); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255,90,95,.16); }
+  .profile-card.active { border-color: var(--coral); background: rgba(255,90,95,.07); box-shadow: 0 0 0 1px var(--coral) inset; }
+  .profile-card .pf-ico { font-size: 1.45rem; display: block; margin-bottom: 6px; }
+  .profile-card .pf-name { font-weight: 700; font-size: .87rem; margin-bottom: 3px; }
+  .profile-card .pf-desc { font-size: .74rem; color: var(--slate); line-height: 1.42; }
+
+  /* ── Vista previa Antes → Después (v11) ── */
+  .pv-old { color: var(--slate); text-decoration: line-through; opacity: .8; }
+  .pv-arrow { color: var(--coral); font-weight: 700; margin: 0 5px; }
+  .pv-new { color: var(--coral-d); font-weight: 700; }
+  [data-theme="dark"] .pv-new { color: #ff8a8e; }
+  .pv-empty { color: var(--slate); font-style: italic; }
+  table.prev td.changed { background: rgba(255, 90, 95, .09); max-width: 320px; }
+
+  /* ── Footer ── */
+  .app-footer { text-align: center; margin-top: 12px; padding-bottom: 90px; }
+  .app-footer .note { display: block; font-size: .8rem; color: var(--slate); }
+  .app-footer .author { font-size: .8rem; color: var(--slate); margin-top: 6px; opacity: .75; }
+  .app-footer .author span { color: var(--coral); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="theme-tog" id="themeTog" title="Cambiar tema">🌓</button>
+    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v11 · RGPD</span></div>
+    <p>Pseudonimización conforme al RGPD y LOPDGDD · Soporte XLSX, CSV, ODS · Revisión interactiva · 100% local</p>
+    <div class="badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Procesamiento 100% local en tu navegador · Sin cookies · Sin trazas
+    </div>
+  </header>
+
+  <!-- BOTÓN AYUDA FLOTANTE -->
+  <button class="help-btn" id="helpBtn" title="Ayuda y Marco Legal">?</button>
+
+  <!-- PASO 0 · AVISO LEGAL -->
+  <div class="card" id="step0">
+    <h2>⚖️ Aviso previo · Marco normativo</h2>
+    <p class="sub">Antes de procesar datos personales, lee y acepta lo siguiente.</p>
+    <div class="legal">
+      <h3>1. Qué hace esta herramienta (v11)</h3>
+      <p>Realiza una <strong>pseudonimización</strong> (RGPD art. 4.5) o <strong>anonimización</strong> de los datos personales contenidos en hojas de cálculo (<code>.xlsx</code>, <code>.csv</code>, <code>.ods</code>), permitiendo procesamiento por lotes. El archivo resultante se entrega siempre en formato <code>.xlsx</code>. Los datos se sustituyen según el modo elegido por el usuario para cada columna:</p>
+      <ul>
+        <li><strong>Datos ficticios verosímiles</strong> — preserva utilidad analítica.</li>
+        <li><strong>Enmascarado parcial</strong> — <code>12345678X → ****5678X</code>.</li>
+        <li><strong>Hash determinista con sal personalizable</strong> — SHA-256 truncado a 80 bits (20 caracteres); permite reproducibilidad entre sesiones (útil para auditorías o actualizaciones cruzadas) sin perder la integridad referencial.</li>
+        <li><strong>Generalización con granularidad</strong> — fechas (año/mes/trimestre), CP (2 o 3 dígitos), edad (tramos de 5 o 10).</li>
+        <li><strong>Sustitución fija</strong> — reemplaza con un texto estático a elegir.</li>
+        <li><strong>Supresión</strong> — vaciado de la celda.</li>
+      </ul>
+      <p>Además, incluye <strong>detección de PII en texto libre</strong> para evitar fugas de información en columnas como "Observaciones", con un modal interactivo para su revisión previa: cada hallazgo se aprueba o rechaza individualmente y el valor propuesto que se muestra es <strong>exactamente</strong> el que se escribirá en la celda.</p>
+      
+      <h3>2. Base jurídica del uso</h3>
+      <p>La pseudonimización por sí sola <strong>no exime</strong> al responsable del tratamiento de identificar una base jurídica válida (RGPD art. 6) ni de aplicar el resto de principios (art. 5). Esta herramienta es una <strong>medida técnica y organizativa</strong> en el sentido de los arts. 25 y 32 RGPD.</p>
+      <h3>3. Datos de categoría especial (art. 9 RGPD)</h3>
+      <p>Si el fichero contiene datos de salud, origen étnico, religión, biometría, orientación sexual u otros del art. 9, el responsable necesita base reforzada. La herramienta marcará en <strong>rojo</strong> las columnas sospechosas de contener esta categoría.</p>
+      <h3>4. Riesgo de reidentificación</h3>
+      <p>Conforme al <em>Opinion 05/2014</em> del WP29/EDPB y a la <em>Guía sobre el uso de técnicas de anonimización</em> de la AEPD, la combinación de cuasi-identificadores (sexo + fecha de nacimiento + código postal) puede permitir reidentificación incluso sin nombre. La herramienta avisará si detecta esta combinación sin anonimizar y <strong>calculará el k-anonimato real</strong> del resultado (agrupando las filas por la combinación de valores finales de los cuasi-identificadores detectados; k = tamaño del grupo más pequeño), incluyéndolo en el informe final con desglose por hoja. El cálculo se limita a los cuasi-identificadores que la herramienta reconoce automáticamente: otros atributos no contemplados podrían reducir el k efectivo.</p>
+      <h3>5. Procesamiento local</h3>
+      <p>Todo el procesamiento ocurre en el navegador. No se establece ninguna conexión saliente con servidores. No hay encargo de tratamiento (RGPD art. 28) ni transferencia internacional.</p>
+      <h3>6. Responsabilidad</h3>
+      <p>El usuario es responsable de verificar el resultado, valorar el riesgo residual (RGPD art. 24) y conservar el informe de verificación generado como evidencia de la medida aplicada.</p>
+      <h3>7. Referencias</h3>
+      <ul>
+        <li>Reglamento (UE) 2016/679 — RGPD</li>
+        <li>Ley Orgánica 3/2018, de 5 de diciembre, LOPDGDD</li>
+        <li>AEPD — <em>Orientaciones y garantías en los procedimientos de anonimización de datos personales</em> (2016)</li>
+        <li>EDPB/WP29 — Opinion 05/2014 on Anonymisation Techniques</li>
+      </ul>
+    </div>
+    <label class="check"><input type="checkbox" id="acept"> He leído y comprendo el aviso. Confirmo que soy responsable o encargado del tratamiento y dispongo de base jurídica para procesar los datos.</label>
+    <button class="btn btn-primary" id="acceptBtn" disabled>Acepto y continúo</button>
+  </div>
+
+  <!-- PASO 1 · CARGA -->
+  <div class="card hidden" id="step1">
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <strong>Arrastra archivos .xlsx, .csv o .ods aquí</strong>
+      <span>o haz clic para seleccionar · Procesamiento por lotes admitido</span>
+    </div>
+    <input type="file" id="file" accept=".xlsx,.csv,.ods" multiple>
+    
+    <div class="flex-row" style="margin-top:16px;">
+      <input type="text" id="customSalt" class="small-input" placeholder="Clave personalizada para Hash (Opcional. Permite hashes idénticos en distintas sesiones)">
+      <button class="btn btn-ghost" id="clearSalt" style="margin:0; padding:8px 14px; width:auto;">Limpiar</button>
+    </div>
+    
+    <details>
+      <summary>⚙️ Opciones avanzadas de carga e importación</summary>
+      <div style="padding: 8px 4px;">
+        <label class="check"><input type="checkbox" id="optSameConfig" checked> Aplicar la misma configuración a todos los archivos del lote (si coinciden cabeceras).</label>
+        <label class="check"><input type="checkbox" id="optLoadConfig"> Cargar configuración guardada previamente (si existe para estas cabeceras).</label>
+        <input type="file" id="importConfigFile" accept=".json" style="display:none">
+        
+        <div class="help-divider" style="margin: 14px 0;"></div>
+        <label class="check"><input type="checkbox" id="optOnlyModifiedSheets"> Exportar solo las hojas modificadas (reduce el tamaño del archivo resultante).</label>
+        <label class="check"><input type="checkbox" id="optSelfTest" checked> Ejecutar self-test de integridad pos-procesamiento.</label>
+      </div>
+    </details>
+    
+    <div class="progress hidden" id="progressBar"><div style="width:0%"></div></div>
+    <div id="macroWarning" class="warning-macro hidden"></div>
+  </div>
+
+  <!-- PASO 2 · CONFIGURACIÓN -->
+  <div class="card hidden" id="step2">
+    <div class="sidebar-layout">
+      <!-- PANEL SUPERIOR (Archivos) -->
+      <div class="file-sidebar">
+        <h3>📁 Archivos cargados</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <div id="fileListSidebar" class="file-list"></div>
+          <button id="addMoreFiles" class="btn btn-ghost" style="margin:0; padding: 8px 14px; width: auto; font-size: .85rem;">+ Añadir más</button>
+        </div>
+      </div>
+      
+      <!-- PANEL PRINCIPAL -->
+      <div class="main-panel">
+        <div class="filebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="fi" id="fname"></div>
+          <div class="fz" id="fmeta"></div>
+        </div>
+
+        <div id="alerts"></div>
+
+        <!-- Indicador de Protección (v9) -->
+        <div class="risk-card" id="riskCard">
+          <div class="risk-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="rr-bg" cx="60" cy="60" r="52"/>
+              <circle class="rr-fg" id="riskArc" cx="60" cy="60" r="52"/>
+            </svg>
+            <div class="risk-num"><span id="riskPct">–</span><small>%</small></div>
+          </div>
+          <div class="risk-info">
+            <div class="risk-title">🛡️ Indicador de protección <span class="pill" style="margin:0">hoja actual</span></div>
+            <div class="risk-sub" id="riskSub"></div>
+            <div class="risk-chips" id="riskChips"></div>
+          </div>
+        </div>
+
+        <!-- Perfiles rápidos (v11) -->
+        <div class="profiles">
+          <div class="profiles-head">⚡ Perfiles rápidos · configura todas las columnas de un clic</div>
+          <div class="profile-grid" id="profileGrid"></div>
+        </div>
+
+        <h2>Hojas y columnas</h2>
+        <p class="sub">Cada columna detectada como sensible se anonimiza según el <strong>modo</strong> elegido.</p>
+
+        <div class="tabs" id="tabs"></div>
+        <div id="sheetsBody"></div>
+        
+        <div class="granularity">
+          <strong style="margin-right: 4px;">🎯 Granularidad:</strong>
+          <select id="redactGranularity" title="Sustitución">
+            <option value="[ANONIMIZADO]">Sustitución → [ANONIMIZADO]</option>
+            <option value="[FICTICIO]">Sustitución → [FICTICIO]</option>
+            <option value="████████">Sustitución → ████████</option>
+          </select>
+          <select id="dateGranularity" title="Fechas">
+            <option value="year">Fecha → Año</option>
+            <option value="month">Fecha → Mes</option>
+            <option value="quarter">Fecha → Trimestre</option>
+          </select>
+          <select id="cpGranularity" title="Código Postal">
+            <option value="2digits">CP → 2 primeros dígitos</option>
+            <option value="3digits">CP → 3 primeros dígitos</option>
+          </select>
+          <select id="ageGranularity" title="Edad">
+            <option value="10">Edad → Tramos de 10 años</option>
+            <option value="5">Edad → Tramos de 5 años</option>
+          </select>
+        </div>
+
+        <h3>Opciones globales de salida</h3>
+        <div class="opts">
+          <label class="check"><input type="checkbox" id="optCoherent" checked> <span><strong>Coherencia referencial</strong><br><span style="color:var(--slate);font-size:.78rem">Mismo original → mismo ficticio.</span></span></label>
+          <label class="check"><input type="checkbox" id="optHighlight"> <span><strong>Resaltar celdas</strong><br><span style="color:var(--slate);font-size:.78rem">Fondo amarillo claro.</span></span></label>
+          <label class="check"><input type="checkbox" id="optComment"> <span><strong>Añadir comentario</strong><br><span style="color:var(--slate);font-size:.78rem">Nota interna en la celda Excel (ralentiza archivos grandes).</span></span></label>
+          <label class="check"><input type="checkbox" id="optSummary" checked> <span><strong>Hoja "Anonimización"</strong><br><span style="color:var(--slate);font-size:.78rem">Añade resumen al final del libro.</span></span></label>
+          <label class="check"><input type="checkbox" id="optScanFree"> <span><strong>PII en texto libre</strong><br><span style="color:var(--slate);font-size:.78rem">Escanear y permitir revisión interactiva (puede ser muy lento).</span></span></label>
+          <label class="check"><input type="checkbox" id="optSaveConfig"> <span><strong>Guardar configuración (Local)</strong><br><span style="color:var(--slate);font-size:.78rem">Se recargará automáticamente la próxima vez.</span></span></label>
+        </div>
+
+        <div class="flex-row" style="margin-top: 16px; justify-content: flex-start; gap: 10px;">
+          <button class="btn btn-ghost" id="exportConfigBtn" style="margin:0; width:auto;">📤 Exportar config actual</button>
+          <button class="btn btn-ghost" id="importConfigBtn" style="margin:0; width:auto;">📥 Importar config (.json)</button>
+        </div>
+
+        <div class="btn-row" style="margin-top: 20px;">
+          <button class="btn btn-ghost" id="prevBtn">👁 Vista previa</button>
+          <button class="btn btn-primary" id="go">Anonimizar y descargar</button>
+        </div>
+        <button class="btn btn-ghost" id="reset" style="margin-top:10px;">Comenzar de nuevo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA PREVIA -->
+  <div class="card hidden" id="prevCard">
+    <h2>👁 Vista previa</h2>
+    <p class="sub">Primeras 10 filas. En las celdas modificadas verás <span class="pv-old">el valor original</span> <span class="pv-arrow">→</span> <span class="pv-new">el valor anonimizado</span>.</p>
+    <div class="scroll-x"><table class="prev" id="prevTable"></table></div>
+    <button class="btn btn-ghost" id="prevClose">Cerrar vista previa</button>
+  </div>
+
+  <!-- PASO 3 · RESULTADO -->
+  <div class="card hidden" id="step3">
+    <div class="done">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>¡Proceso Completado!</h2>
+      <div id="doneMsg" class="sub" style="font-size: 1rem; margin-top:8px;"></div>
+      <div id="dlList" class="files-list"></div>
+      <button class="btn btn-primary" id="viewHtml" style="margin-top:20px;">📄 Ver informe de cumplimiento · imprimible a PDF</button>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-ghost" id="dlHtml">⬇ Informe (.html)</button>
+        <button class="btn btn-ghost" id="dlLog">⬇ Métricas (.txt)</button>
+      </div>
+      <button class="btn btn-ghost" id="reset2" style="margin-top:10px;">Anonimizar más archivos</button>
+    </div>
+  </div>
+
+  <div class="app-footer">
+    <span class="note">Procesamiento local asíncrono · ExcelJS / PapaParse / SheetJS · No se realizan conexiones a servidores externos.</span>
+    <p class="author">Aplicación creada y diseñada por <span>Carlos J. Galán Doval</span> · 2026</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL DE REVISIÓN DE PII (Texto Libre)
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="piiOverlay">
+  <div class="modal" role="dialog" aria-labelledby="piiTitle">
+    <div class="modal-head">
+      <span style="font-size:1.4rem">🔍</span>
+      <h2 id="piiTitle">Revisión de PII en Texto Libre</h2>
+      <button class="modal-close" id="piiClose" title="Cerrar">✕</button>
+    </div>
+    <div class="modal-body" style="padding: 24px; background: var(--bg);">
+      <p style="margin-bottom: 16px; font-size: .9rem;">Se han detectado posibles datos personales en celdas de texto libre (no marcadas para anonimizar). Selecciona cuáles deseas enmascarar:</p>
+      
+      <div style="margin-bottom: 12px; display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="piiSelectAll" style="width:auto; padding: 6px 12px; font-size:.8rem; margin:0;">Marcar todos</button>
+        <button class="btn btn-ghost" id="piiDeselectAll" style="width:auto; padding: 6px 12px; font-size:.8rem; margin:0;">Desmarcar todos</button>
+      </div>
+
+      <div id="piiList" style="max-height: 40vh; overflow-y: auto; padding-right: 8px;">
+        <!-- Elementos generados dinámicamente -->
+      </div>
+      
+    </div>
+    <div class="modal-head" style="border-top: 1px solid var(--line); border-bottom: none; background: var(--card); justify-content: flex-end;">
+      <button class="btn btn-ghost" id="piiCancelBtn" style="width:auto; margin:0;">Cancelar Proceso</button>
+      <button class="btn btn-primary" id="piiConfirmBtn" style="width:auto; margin:0;">Aplicar y Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL DE AYUDA Y MARCO LEGAL
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="helpOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+
+    <div class="modal-head">
+      <span style="font-size:1.4rem">📖</span>
+      <h2 id="helpTitle">Manual de uso y Marco Legal</h2>
+      <button class="modal-close" id="helpClose" title="Cerrar">✕</button>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="carga">📥 Carga e Importación</button>
+      <button class="modal-tab" data-tab="casos">💡 Casos de Uso</button>
+      <button class="modal-tab" data-tab="modos">🎛 Modos por columna</button>
+      <button class="modal-tab" data-tab="globales">⚙️ Opciones globales</button>
+      <button class="modal-tab" data-tab="flujo">🗂 Flujo de trabajo</button>
+      <button class="modal-tab" data-tab="legal">⚖️ Marco Legal</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- TAB: CARGA E IMPORTACIÓN -->
+      <div class="modal-section active" id="tab-carga">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:16px">Opciones avanzadas disponibles en el momento de seleccionar o arrastrar los archivos originales:</p>
+
+        <div class="help-grid">
+          <div class="help-card">
+            <div class="hc-icon">🔄</div>
+            <div class="hc-title">Aplicar misma configuración al lote</div>
+            <div class="hc-desc">Si cargas varios archivos a la vez que comparten las mismas columnas, marca esta opción para que, al configurar el primer archivo, las reglas se copien automáticamente al resto. Ahorra tiempo en informes recurrentes.</div>
+          </div>
+          
+          <div class="help-card">
+            <div class="hc-icon">💾</div>
+            <div class="hc-title">Cargar configuración guardada</div>
+            <div class="hc-desc">Intenta buscar en tu navegador si ya has anonimizado anteriormente un archivo con estas mismas cabeceras. Si es así, recupera y aplica automáticamente las reglas que guardaste la última vez.</div>
+          </div>
+          
+          <div class="help-card">
+            <div class="hc-icon">✂️</div>
+            <div class="hc-title">Exportar solo las hojas modificadas</div>
+            <div class="hc-desc">Si tu Excel tiene varias hojas, pero solo una contiene datos personales que vas a anonimizar, esta opción eliminará el resto de las hojas del archivo final. Ideal para aligerar el peso de archivos pesados.</div>
+          </div>
+          
+          <div class="help-card">
+            <div class="hc-icon">🛡️</div>
+            <div class="hc-title">Ejecutar self-test de integridad</div>
+            <div class="hc-desc">Realiza una comprobación de seguridad extra: tras anonimizar, compara todas y cada una de las celdas <strong>no seleccionadas</strong> con el original para garantizar al 100% que la aplicación no ha modificado ni un solo dato que no debiera. Optimizado para archivos grandes (instantánea por fila).</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">📄</div>
+            <div class="hc-title">Formatos de entrada y salida</div>
+            <div class="hc-desc">Se admiten <strong>.xlsx</strong>, <strong>.csv</strong> y <strong>.ods</strong> como entrada. El archivo anonimizado se genera siempre en formato <strong>.xlsx</strong> (también para CSV y ODS); la aplicación lo avisa al cargar. En XLSX se conservan estilos, anchos, fórmulas y formato original.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CASOS DE USO -->
+      <div class="modal-section" id="tab-casos">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:16px">Descubre escenarios prácticos donde esta herramienta resulta imprescindible para operar de forma ágil y con seguridad jurídica:</p>
+        
+        <div class="help-grid" style="grid-template-columns: 1fr;">
+          <div class="help-card" style="padding-bottom:16px">
+            <div class="hc-icon">💻</div>
+            <div class="hc-title">Desarrollo y Pruebas (IT/QA)</div>
+            <div class="hc-desc" style="margin-bottom:12px;"><strong>Caso de uso:</strong> Los programadores y equipos de calidad (QA) necesitan datos realistas para probar el software, pero por ley no deben usar bases de datos reales de producción.</div>
+            <div class="hc-desc" style="background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
+              <strong style="color:var(--ink);">💡 Cómo ayuda:</strong> Usando el modo <strong style="color:var(--coral)">Datos Ficticios</strong>, se genera un clon del Excel de producción con nombres, apellidos y correos inventados que sirve perfectamente para testear sin riesgo de brecha de datos.
+            </div>
+          </div>
+          
+          <div class="help-card" style="padding-bottom:16px">
+            <div class="hc-icon">🔬</div>
+            <div class="hc-title">Investigación y Ensayos Clínicos</div>
+            <div class="hc-desc" style="margin-bottom:12px;"><strong>Caso de uso:</strong> Compartir registros clínicos o encuestas con otras universidades, laboratorios o instituciones colaboradoras para realizar análisis estadísticos conjuntos.</div>
+            <div class="hc-desc" style="background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
+              <strong style="color:var(--ink);">💡 Cómo ayuda:</strong> Usando la <strong style="color:var(--coral)">Generalización</strong> (ej. cambiar una fecha exacta de nacimiento solo por el año) se elimina la identidad del individuo manteniendo el 100% del valor estadístico.
+            </div>
+          </div>
+
+          <div class="help-card" style="padding-bottom:16px">
+            <div class="hc-icon">📊</div>
+            <div class="hc-title">Analítica Externa (Business Intelligence)</div>
+            <div class="hc-desc" style="margin-bottom:12px;"><strong>Caso de uso:</strong> Enviar listados de ventas o recursos humanos a una consultora externa para que generen cuadros de mandos o evalúen el rendimiento corporativo.</div>
+            <div class="hc-desc" style="background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
+              <strong style="color:var(--ink);">💡 Cómo ayuda:</strong> Aplicando el <strong style="color:var(--coral)">Hash Determinista</strong>, la consultora verá que el "ID A3F7" compró 5 veces, permitiéndoles cruzar datos de recurrencia sin revelar nunca quién es la persona.
+            </div>
+          </div>
+
+          <div class="help-card" style="padding-bottom:16px">
+            <div class="hc-icon">🤖</div>
+            <div class="hc-title">Entrenamiento de Inteligencia Artificial</div>
+            <div class="hc-desc" style="margin-bottom:12px;"><strong>Caso de uso:</strong> Alimentar y entrenar modelos predictivos (Machine Learning) o LLMs con gran cantidad de registros históricos de la compañía para que sean más precisos.</div>
+            <div class="hc-desc" style="background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
+              <strong style="color:var(--ink);">💡 Cómo ayuda:</strong> Permite purgar y censurar masivamente los datasets antes de introducirlos en la IA, evitando que la red neuronal memorice o filtre accidentalmente información confidencial en el futuro.
+            </div>
+          </div>
+
+          <div class="help-card" style="padding-bottom:16px">
+            <div class="hc-icon">💼</div>
+            <div class="hc-title">Auditorías o Due Diligence (M&A)</div>
+            <div class="hc-desc" style="margin-bottom:12px;"><strong>Caso de uso:</strong> Durante la venta o fusión de una empresa, hay que abrir los libros contables masivos y la facturación a los abogados e inversores de la parte compradora.</div>
+            <div class="hc-desc" style="background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #475569;">
+              <strong style="color:var(--ink);">💡 Cómo ayuda:</strong> Usa la <strong style="color:var(--coral)">Supresión</strong> para ocultar nombres exactos pero manteniendo visibles los importes económicos y fechas, demostrando el volumen de negocio sin violar el secreto profesional.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: MODOS POR COLUMNA -->
+      <div class="modal-section" id="tab-modos">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:16px">Cada columna marcada como sensible dispone de un <strong>modo de anonimización</strong> independiente. Puedes combinarlo libremente: una columna en modo hash, otra en datos ficticios, otra suprimida.</p>
+
+        <div class="help-grid">
+          <div class="help-card">
+            <div class="hc-icon">🎭</div>
+            <div class="hc-title">Datos ficticios verosímiles</div>
+            <div class="hc-desc">Sustituye el valor por un dato inventado del mismo tipo: nombres, apellidos, DNI válidos, teléfonos, emails, direcciones, municipios… Los datos resultan creíbles pero son completamente inventados.</div>
+            <span class="hc-ex">Carlos García → María Romero</span>
+            <div class="hc-desc" style="margin-top:8px">✔ Máxima utilidad analítica · recomendado para entornos de pruebas y desarrollo.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">●</div>
+            <div class="hc-title">Enmascarado parcial</div>
+            <div class="hc-desc">Oculta la mayor parte del valor conservando suficientes caracteres para reconocer el tipo de dato. Adaptado por categoría: DNI, email, IBAN, tarjeta, teléfono, nombre…</div>
+            <span class="hc-ex">12345678Z → *****678Z</span><br>
+            <span class="hc-ex">juan@mail.com → j***@mail.com</span>
+            <div class="hc-desc" style="margin-top:8px">✔ Útil para revisiones parciales donde el receptor necesita contexto pero no el dato completo.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">#</div>
+            <div class="hc-title">Hash determinista (sal configurable)</div>
+            <div class="hc-desc">
+              Transforma el texto original en una secuencia incomprensible de números y letras (<em>hash</em>), pero de forma que la misma palabra siempre genera el mismo resultado.
+              <br><br>
+              <strong>¿Qué es la "sal"?</strong> Es una contraseña secreta que el sistema le añade al texto antes de cifrarlo. Esto impide que alguien pueda adivinar los nombres originales cruzando el resultado con listas públicas o diccionarios.
+            </div>
+            <span class="hc-ex">12345678Z → A3F7C2B1E4D95B07C1A2</span>
+            <div class="hc-desc" style="margin-top:8px">Longitud: 20 caracteres (SHA-256 truncado a 80 bits) — riesgo de colisión despreciable incluso en datasets de millones de filas.</div>
+            <div class="hc-desc" style="margin-top:8px">✔ Preserva la <strong>integridad referencial</strong>. Recomendado para cruzar tablas manteniendo el anonimato.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">▮</div>
+            <div class="hc-title">Sustitución fija</div>
+            <div class="hc-desc">Sobrescribe la celda entera con un texto estático a tu elección (por ejemplo <code>[ANONIMIZADO]</code>, <code>[FICTICIO]</code> o <code>██████</code>), impidiendo cualquier reidentificación y homogeneizando el aspecto visual.</div>
+            <div class="hc-desc" style="margin-top:8px">ℹ️ Las celdas afectadas se marcan en Excel con <s>texto tachado</s> en gris, para que se distingan de un vistazo. Sólo se aplica a las celdas sustituidas.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">≈</div>
+            <div class="hc-title">Generalización (Granularidad)</div>
+            <div class="hc-desc">Reduce la precisión del dato sin eliminarlo. Estrategia k-anonimato. Ahora puedes ajustar dinámicamente el nivel de detalle: fecha → año, mes o trimestre; CP → 2 o 3 dígitos; edad → tramos de 5 o 10 años.</div>
+            <span class="hc-ex">12/03/1985 → 1985</span><br>
+            <span class="hc-ex">14900 → 14XXX</span>
+            <div class="hc-desc" style="margin-top:8px">✔ Ideal para fechas de nacimiento, códigos postales y edades que deben conservarse para análisis estadístico.</div>
+          </div>
+
+
+          <div class="help-card">
+            <div class="hc-icon">∅</div>
+            <div class="hc-title">Supresión (vaciar celda)</div>
+            <div class="hc-desc">Elimina completamente el contenido de la celda. La celda permanece en blanco, conservando el formato y los estilos originales. No escribe ningún valor sustituto.</div>
+            <div class="hc-desc" style="margin-top:8px">ℹ️ Igual que la Sustitución, la celda se marca con el atributo <s>tachado</s> en gris como señal de dato eliminado. Sólo afecta a las celdas suprimidas.</div>
+            <span class="hc-ex">638 210 070 → (celda vacía)</span>
+            <div class="hc-desc" style="margin-top:8px">✔ Equivalente a la eliminación de datos. Recomendado cuando la columna no es necesaria para el propósito del tratamiento.</div>
+          </div>
+        </div>
+
+        <div class="help-note">
+          💡 <strong>¿Qué modo elegir?</strong> Para entornos de pruebas: <em>Datos ficticios</em>. Para cruzar tablas sin exponer identidades: <em>Hash determinista</em>. Para datos de salud o art. 9: <em>Hash</em> o <em>Supresión</em>. Para informes donde sólo importan tendencias: <em>Generalización</em>.
+        </div>
+      </div>
+
+      <!-- TAB: OPCIONES GLOBALES -->
+      <div class="modal-section" id="tab-globales">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:16px">Estas opciones se aplican a <strong>todos los archivos y hojas</strong> del lote de forma uniforme.</p>
+
+        <div class="help-grid">
+          <div class="help-card highlight">
+            <div class="hc-icon">⚡</div>
+            <div class="hc-title">Perfiles rápidos (un solo clic)</div>
+            <div class="hc-desc">Cuatro configuraciones listas para usar que ajustan <strong>todas las columnas de todas las hojas</strong> del archivo actual según el tipo de dato detectado:</div>
+            <div class="hc-desc" style="margin-top:8px">
+              💻 <strong>Pruebas IT</strong> — todo a datos ficticios verosímiles, para desarrollo y QA.<br>
+              🔬 <strong>Investigación clínica</strong> — identificadores por hash, fechas y CP generalizados, y <em>conserva</em> las variables clínicas del art. 9 (son el objeto del estudio: exige base jurídica reforzada).<br>
+              🤝 <strong>Compartir con terceros</strong> — hash en identificadores para poder cruzar tablas, generalización en cuasi-identificadores y sustitución del art. 9.<br>
+              🔒 <strong>Máxima protección</strong> — supresión de identificadores y categorías especiales; sólo se conservan datos generalizados.
+            </div>
+            <div class="hc-desc" style="margin-top:8px">✔ Después puedes ajustar manualmente cualquier columna: el perfil se marca como personalizado y el indicador de protección se recalcula al instante.</div>
+          </div>
+
+          <div class="help-card highlight">
+            <div class="hc-icon">🛡️</div>
+            <div class="hc-title">Indicador de protección (en vivo)</div>
+            <div class="hc-desc">El anillo del paso 2 puntúa de 0 a 100 la cobertura de la hoja actual y se actualiza al instante con cada cambio: porcentaje de columnas sensibles activadas, con dos límites de seguridad — cualquier columna art. 9 sin proteger baja la nota a 40 (crítico) y 3 o más cuasi-identificadores sin proteger la limitan a 70 (riesgo Sweeney).</div>
+            <div class="hc-desc" style="margin-top:8px">🟢 ≥90 protección alta · 🟡 60-89 revisa los avisos · 🔴 &lt;60 alto riesgo. Es orientativo: la validez final la da el informe con el k-anonimato calculado.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">🔗</div>
+            <div class="hc-title">Coherencia referencial</div>
+            <div class="hc-desc">Si el mismo valor original aparece en varias filas (o en varios archivos del lote), siempre recibirá el mismo valor ficticio. Permite cruzar registros por el dato anonimizado sin exponer el original.</div>
+            <div class="hc-desc" style="margin-top:8px">✔ Imprescindible cuando necesitas mantener la consistencia entre tablas relacionadas (paciente, episodios, prescripciones…).</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">🟡</div>
+            <div class="hc-title">Resaltar celdas anonimizadas</div>
+            <div class="hc-desc">Aplica un fondo amarillo claro <strong>exclusivamente</strong> a las celdas que han sido modificadas. Facilita la auditoría visual del resultado directamente en Excel.</div>
+            <div class="hc-desc" style="margin-top:8px">⚠ Sobreescribe el relleno original de esas celdas. Actívalo sólo si el color de fondo no es relevante para el destinatario.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">💬</div>
+            <div class="hc-title">Añadir comentario en celda</div>
+            <div class="hc-desc">Inserta una nota interna en cada celda anonimizada indicando el modo aplicado. Visible al pasar el ratón sobre la celda en Excel.</div>
+            <span class="hc-ex">«Anonimizado (Datos ficticios · Nombre)»</span>
+            <div class="hc-desc" style="margin-top:8px">✔ Útil para auditorías internas. Puede desactivarse si el volumen de celdas es muy elevado.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">📋</div>
+            <div class="hc-title">Hoja "Anonimización"</div>
+            <div class="hc-desc">Añade una hoja adicional al libro con el informe completo: columnas afectadas, modos aplicados, hashes SHA-256 del fichero origen y del resultado, referencias legales y sello temporal.</div>
+            <div class="hc-desc" style="margin-top:8px">✔ La evidencia documental viaja con el archivo. Recomendado para cumplimiento RGPD y auditorías del DPD.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">🔍</div>
+            <div class="hc-title">Escanear PII en texto libre (Revisión interactiva)</div>
+            <div class="hc-desc">Analiza el contenido de columnas <em>no marcadas</em> (p. ej. «Observaciones») buscando DNI, NIE, IBAN, emails, teléfonos y matrículas mediante expresiones regulares. Cuando se detectan, la herramienta muestra un <strong>modal interactivo</strong> para que puedas confirmar o rechazar cada caso concreto antes de exportar.</div>
+            <div class="hc-desc" style="margin-top:8px">⚠ Cierra la fuga más habitual en ficheros sanitarios y administrativos: los datos que «cuelan» en campos de texto libre.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">💾</div>
+            <div class="hc-title">Guardar e Importar configuración</div>
+            <div class="hc-desc">Guarda en el navegador (o como archivo `.json`) qué columnas están marcadas y qué modo tiene cada una, asociado al esquema de cabeceras del fichero. Puedes exportar y compartir la configuración para procesos estandarizados.</div>
+            <div class="hc-desc" style="margin-top:8px">✔ Ahorra tiempo en flujos repetitivos con el mismo tipo de fichero.</div>
+          </div>
+        </div>
+
+
+        <h3 style="margin-top: 24px;">Exportación e Importación de Configuración</h3>
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:16px">La herramienta te permite no tener que configurar las columnas repetitivas manualmente cada vez que subes un archivo. Hay dos formas de hacerlo:</p>
+
+        <div class="help-grid">
+          <div class="help-card">
+            <div class="hc-icon">💾</div>
+            <div class="hc-title">Automático (Guardar/Cargar configuración local)</div>
+            <div class="hc-desc">Si marcas la casilla "Guardar configuración (Local)" en el paso 2, el navegador recordará en secreto qué columnas has anonimizado para ese archivo.</div>
+            <div class="hc-desc" style="margin-top:8px">La próxima vez que entres a la web y arrastres un archivo con <strong>exactamente las mismas columnas</strong>, si marcaste "Cargar configuración guardada previamente" en el Paso 1, todo se configurará mágicamente solo.</div>
+            <div class="hc-desc" style="margin-top:8px">✔ Se guarda solo en tu navegador (LocalStorage). Si limpias el caché, se perderá.</div>
+          </div>
+
+          <div class="help-card">
+            <div class="hc-icon">📤</div>
+            <div class="hc-title">Manual (Exportar / Importar .json)</div>
+            <div class="hc-desc">Los botones "Exportar / Importar config (.json)" en el Paso 2 te permiten descargar un archivo pequeñito con tus reglas de columnas.</div>
+            <div class="hc-desc" style="margin-top:8px">Si exportas un archivo y se lo envías por correo a un compañero, él podrá cargar un Excel idéntico, hacer clic en "Importar", y se le aplicarán tus mismas reglas.</div>
+            <div class="hc-desc" style="margin-top:8px">✔ Ideal para compartir plantillas de anonimización entre departamentos o hacer copias de seguridad de configuraciones muy complejas.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: FLUJO DE TRABAJO -->
+      <div class="modal-section" id="tab-flujo">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:20px">Estos son los pasos que sigue la aplicación desde que cargas el archivo hasta que descargas el resultado.</p>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="help-card" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="background:var(--coral);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">1</div>
+            <div><div class="hc-title">Acepta el aviso legal</div><div class="hc-desc">Lee el marco normativo (RGPD, LOPDGDD, AEPD) y confirma que tienes base jurídica para tratar los datos. Este paso inicializa los algoritmos de anonimización en tu navegador.</div></div>
+          </div>
+          <div class="help-card" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="background:var(--coral);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">2</div>
+            <div><div class="hc-title">Carga uno o varios archivos (.xlsx, .csv, .ods)</div><div class="hc-desc">Arrastra los archivos al área de carga. El sistema soporta múltiples formatos y procesamiento por lotes asíncrono para que la interfaz nunca se congele, incluso con archivos grandes.</div></div>
+          </div>
+          <div class="help-card" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="background:var(--coral);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">3</div>
+            <div><div class="hc-title">Revisa y configura las columnas</div><div class="hc-desc">Navega por los archivos usando la <strong>Barra lateral</strong>. La detección automática marcará en coral las columnas sensibles y en rojo las de categoría especial (art. 9). Puedes configurar la granularidad y los modos de salida.</div></div>
+          </div>
+          <div class="help-card" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="background:var(--coral);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">4</div>
+            <div><div class="hc-title">Vista previa y Revisión de Texto Libre</div><div class="hc-desc">La <strong>vista previa</strong> muestra las 10 primeras filas en formato <em>Antes → Después</em>: en cada celda modificada verás el valor original tachado en gris junto al valor anonimizado en coral, para comprobar de un vistazo que el resultado es el esperado. Además, al pulsar "Anonimizar", si el escáner detecta información personal infiltrada en columnas de texto libre, aparecerá un modal para que apruebes individualmente cada corrección.</div></div>
+          </div>
+          <div class="help-card" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="background:var(--coral);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">5</div>
+            <div><div class="hc-title">Anonimizar y descargar</div><div class="hc-desc">La app sustituye los valores en el libro original, conservando el formato. Las macros y enlaces externos detectados generarán una advertencia para que las actualices manualmente.</div></div>
+          </div>
+          <div class="help-card" style="display:flex;gap:14px;align-items:flex-start">
+            <div style="background:var(--ok);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">✓</div>
+            <div><div class="hc-title">Descarga el informe de cumplimiento</div><div class="hc-desc">Se genera un <strong>informe con diseño, listo para imprimir o guardar como PDF</strong>: anillo de cobertura de protección, k-anonimato calculado con desglose por hoja, tabla de columnas tratadas con sus modos, cadenas de custodia SHA-256 y el marco normativo con enlaces. Es el documento que puedes entregar al DPD, a un auditor o al destinatario de los datos. También sigue disponible la versión en texto plano (.txt) para archivo o procesamiento automático.</div></div>
+          </div>
+        </div>
+
+        <div class="help-note" style="margin-top:20px">
+          🔒 <strong>Todo el procesamiento ocurre en tu navegador.</strong> Ningún dato abandona tu equipo. No hay servidor, no hay cookies, no hay trazas de uso.
+        </div>
+        
+        <div class="help-note" style="margin-top:14px; background-color: #f0fdf4; border-color: #bbf7d0; color: #166534;">
+          💎 <strong>Garantía de Integridad Estructural y Visual:</strong> Al anonimizar, la herramienta modifica exclusivamente las celdas de las columnas seleccionadas. <strong>Todo lo demás permanece 100% inalterado:</strong> el número total de filas y columnas, las hojas de cálculo, y la apariencia original (anchos, altos, colores, fuentes, fórmulas y bordes). El archivo generado será un clon visual exacto del original, pero con los datos sensibles neutralizados.
+        </div>
+      </div>
+
+      <!-- TAB: MARCO LEGAL -->
+      <div class="modal-section" id="tab-legal">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:20px">Normativa, guías y documentos oficiales de referencia. Todos los enlaces apuntan a fuentes primarias vigentes.</p>
+
+        <h3 style="text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--ink);margin-bottom:12px">🇪🇺 Normativa europea</h3>
+
+        <a class="legal-link" href="https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX%3A32016R0679" target="_blank" rel="noopener">
+          <div class="ll-icon">📜</div>
+          <div class="ll-body">
+            <div class="ll-title">Reglamento (UE) 2016/679 — RGPD</div>
+            <div class="ll-sub">Reglamento General de Protección de Datos. Base jurídica principal. Especialmente relevantes: arts. 4.5 (pseudonimización), 5 (principios), 6 (licitud), 9 (categorías especiales), 17 (supresión), 24 (responsabilidad), 25 (privacidad desde el diseño), 32 (seguridad del tratamiento).</div>
+            <div class="ll-url">eur-lex.europa.eu · Texto consolidado en español</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-042019-article-25-data-protection-design-and_es" target="_blank" rel="noopener">
+          <div class="ll-icon">🏛️</div>
+          <div class="ll-body">
+            <div class="ll-title">EDPB — Directrices 4/2019 sobre el art. 25 RGPD (privacidad desde el diseño)</div>
+            <div class="ll-sub">Guía del Comité Europeo de Protección de Datos sobre cómo implementar la privacidad por defecto y desde el diseño. Explica cómo la pseudonimización y otras medidas técnicas satisfacen el art. 25.</div>
+            <div class="ll-url">edpb.europa.eu</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp216_en.pdf" target="_blank" rel="noopener">
+          <div class="ll-icon">📄</div>
+          <div class="ll-body">
+            <div class="ll-title">WP29 / EDPB — Opinion 05/2014 on Anonymisation Techniques</div>
+            <div class="ll-sub">Documento fundacional sobre técnicas de anonimización. Analiza el riesgo de reidentificación, el efecto Sweeney (cuasi-identificadores), la solidez de la supresión, generalización, perturbación y seudonimización. Sigue siendo la referencia técnica clave.</div>
+            <div class="ll-url">ec.europa.eu · PDF en inglés</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://edpb.europa.eu" target="_blank" rel="noopener">
+          <div class="ll-icon">🏛️</div>
+          <div class="ll-body">
+            <div class="ll-title">EDPB — Comité Europeo de Protección de Datos</div>
+            <div class="ll-sub">Portal oficial del EDPB con directrices, dictámenes, decisiones vinculantes y recomendaciones actualizadas sobre protección de datos en la UE.</div>
+            <div class="ll-url">edpb.europa.eu</div>
+          </div>
+        </a>
+
+        <hr class="help-divider">
+        <h3 style="text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--ink);margin-bottom:12px">🇪🇸 Normativa española</h3>
+
+        <a class="legal-link" href="https://www.boe.es/buscar/act.php?id=BOE-A-2018-16673" target="_blank" rel="noopener">
+          <div class="ll-icon">📜</div>
+          <div class="ll-body">
+            <div class="ll-title">Ley Orgánica 3/2018, de 5 de diciembre — LOPDGDD</div>
+            <div class="ll-sub">Ley Orgánica de Protección de Datos Personales y garantía de los derechos digitales. Adapta el RGPD al ordenamiento jurídico español y añade derechos específicos (art. 93 y ss.). Texto consolidado en el BOE.</div>
+            <div class="ll-url">boe.es · Texto consolidado</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://www.aepd.es/guias/orientaciones-garantias-procedimientos-anonimizacion.pdf" target="_blank" rel="noopener">
+          <div class="ll-icon">📄</div>
+          <div class="ll-body">
+            <div class="ll-title">AEPD — Orientaciones y garantías en los procedimientos de anonimización de datos personales</div>
+            <div class="ll-sub">Guía técnica de la Agencia Española de Protección de Datos (2016). Define los criterios de suficiencia de la anonimización, las principales técnicas, los riesgos residuales y las medidas de control. Referencia directa de la metodología aplicada en esta herramienta.</div>
+            <div class="ll-url">aepd.es · PDF en español</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://www.aepd.es/guias/guia-evaluaciones-de-impacto-rgpd.pdf" target="_blank" rel="noopener">
+          <div class="ll-icon">📄</div>
+          <div class="ll-body">
+            <div class="ll-title">AEPD — Guía práctica para las Evaluaciones de Impacto en la Protección de Datos (EIPD)</div>
+            <div class="ll-sub">Guía para realizar la evaluación de impacto exigida por el art. 35 RGPD cuando el tratamiento conlleva alto riesgo. La pseudonimización de ficheros sanitarios puede requerirla.</div>
+            <div class="ll-url">aepd.es · PDF en español</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://www.aepd.es" target="_blank" rel="noopener">
+          <div class="ll-icon">🏛️</div>
+          <div class="ll-body">
+            <div class="ll-title">AEPD — Agencia Española de Protección de Datos</div>
+            <div class="ll-sub">Portal oficial de la autoridad de control española. Incluye guías temáticas, herramientas (Facilita, EIPD), consultas frecuentes, resoluciones y el canal de reclamaciones.</div>
+            <div class="ll-url">aepd.es</div>
+          </div>
+        </a>
+
+        <a class="legal-link" href="https://www.boe.es/buscar/act.php?id=BOE-A-2020-1498" target="_blank" rel="noopener">
+          <div class="ll-icon">🏥</div>
+          <div class="ll-body">
+            <div class="ll-title">Ley 41/2002 — Ley de Autonomía del Paciente (LAP)</div>
+            <div class="ll-sub">Marco específico para datos de salud en España. Regula la historia clínica, el acceso, la cesión y la custodia de datos sanitarios. Relevante cuando el fichero contiene NHC, diagnósticos o datos asistenciales.</div>
+            <div class="ll-url">boe.es</div>
+          </div>
+        </a>
+
+        <div class="help-note" style="margin-top:20px">
+          ⚠️ <strong>Nota:</strong> Esta herramienta implementa medidas técnicas de pseudonimización/anonimización, pero <strong>no sustituye al asesoramiento jurídico</strong>. La base jurídica del tratamiento, la necesidad de EIPD y la designación de DPD son responsabilidad del responsable del tratamiento conforme al art. 24 RGPD.
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
+
+<script>
+"use strict";
+
+/* ==========================================================================
+   DICCIONARIOS Y GENERADORES (Mantenidos desde v4/v5)
+   ========================================================================== */
+const NOMBRES_M = ["Antonio","José","Manuel","Francisco","Juan","David","Carlos","Javier","Daniel","Miguel","Rafael","Pedro","Ángel","Alejandro","Fernando","Sergio","Pablo","Jorge","Alberto","Luis","Álvaro","Adrián","Diego","Iván","Rubén"];
+const NOMBRES_F = ["María","Carmen","Ana","Isabel","Laura","Cristina","Marta","Lucía","Elena","Sara","Paula","Pilar","Rosa","Dolores","Sofía","Andrea","Raquel","Beatriz","Patricia","Nuria","Silvia","Teresa","Julia","Alba","Irene"];
+const APELLIDOS = ["García","Rodríguez","González","Fernández","López","Martínez","Sánchez","Pérez","Gómez","Martín","Jiménez","Ruiz","Hernández","Díaz","Moreno","Muñoz","Álvarez","Romero","Alonso","Gutiérrez","Navarro","Torres","Domínguez","Vázquez","Ramos","Gil","Ramírez","Serrano","Blanco","Molina","Morales","Suárez","Ortega","Delgado","Castro","Ortiz","Marín","Núñez","Iglesias","Medina"];
+const CALLES = ["Calle Mayor","Avenida de Andalucía","Calle Real","Plaza de España","Calle Nueva","Avenida de la Constitución","Calle Cervantes","Calle del Sol","Paseo del Parque","Calle de la Iglesia","Avenida del Mar","Calle San Juan","Calle Larga","Camino de la Fuente","Calle Granada"];
+const MUNICIPIOS = ["Montilla","Lucena","Cabra","Aguilar de la Frontera","Puente Genil","Baena","Rute","Castro del Río","Espejo","Fernán Núñez","Montemayor","La Rambla","Doña Mencía","Nueva Carteya","Monturque"];
+const PROVINCIAS = ["Córdoba","Sevilla","Granada","Jaén","Málaga","Almería","Cádiz","Huelva"];
+const DOMINIOS = ["ejemplo.com","correo.es","mail.com","ficticio.org","test.es"];
+const LETRA_DNI = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+const r = a => a[Math.floor(Math.random() * a.length)];
+const rint = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+function fakeDNI(){ const n=rint(10000000,99999999); return n+LETRA_DNI[n%23]; }
+function fakeNIE(){ const p="XYZ"[rint(0,2)]; const n=rint(1000000,9999999); const full=({"X":"0","Y":"1","Z":"2"}[p])+n; return p+n+LETRA_DNI[parseInt(full)%23]; }
+function fakeTelUno(){ return r(["6","7","9"])+Array.from({length:8},()=>rint(0,9)).join(""); }
+function fakeNombre(){ return Math.random()<0.5?r(NOMBRES_M):r(NOMBRES_F); }
+function fakeApellido(){ return r(APELLIDOS); }
+function fakeApellidos(){ return r(APELLIDOS)+" "+r(APELLIDOS); }
+function fakeNombreCompleto(){ return fakeNombre()+" "+fakeApellidos(); }
+function fakeEmail(){ return (r(NOMBRES_M)+"."+r(APELLIDOS)).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")+rint(1,99)+"@"+r(DOMINIOS); }
+function fakeDir(){ return r(CALLES)+", "+rint(1,120)+(Math.random()<0.5?", "+rint(1,5)+"º "+r(["A","B","C","D"]):""); }
+function fakeNHC(){ return Array.from({length:8},()=>rint(0,9)).join(""); }
+function fakeCP(){ return "14"+String(rint(0,999)).padStart(3,"0"); }
+function fakeMunicipio(){ return r(MUNICIPIOS); }
+function fakeProvincia(){ return r(PROVINCIAS); }
+function fakeSIP(){ return "AN"+Array.from({length:10},()=>rint(0,9)).join(""); }
+function fakeIBAN(){ let acc="ES"; for(let i=0;i<22;i++) acc+=rint(0,9); return acc.replace(/(.{4})/g,"$1 ").trim(); }
+function fakeTarjeta(){ let body="4"+Array.from({length:14},()=>rint(0,9)).join(""); let sum=0; for(let i=0;i<body.length;i++){ let d=+body[body.length-1-i]; if(i%2===0){d*=2; if(d>9)d-=9;} sum+=d;} const chk=(10-(sum%10))%10; return (body+chk).replace(/(.{4})/g,"$1 ").trim(); }
+function fakeMatricula(){ return rint(1000,9999)+" "+r(["BBC","BBD","BBF","CCG","CCH","CCK","CCN","DDP","DDR"]); }
+function fakeNSS(){ return "28 "+rint(10000000,99999999)+" "+rint(10,99); }
+function fakeTel(orig){ if(orig==null) return fakeTelUno(); const s=String(orig).trim(); const sep=s.match(/[,;\s]+/); if(!sep) return fakeTelUno(); const partes=s.split(/[,;\s]+/).filter(Boolean); if(partes.length<=1) return fakeTelUno(); return partes.map(()=>fakeTelUno()).join(sep[0]); }
+
+// REGLAS DETECCIÓN
+const REGLAS = [
+  {id:"nhc",t:"NHC",k:/\b(nhc|n[ºo°]?\s*hist|historia\s*cl[ií]nic|num.*hist)/i,fn:()=>fakeNHC(),art9:false},
+  {id:"sip",t:"SIP",k:/\b(sip|nuhsa|tarjeta\s*sanit|n[ºo°]?\s*sip)/i,fn:()=>fakeSIP()},
+  {id:"dni",t:"DNI",k:/\b(dni|nif|documento|d\.?n\.?i)/i,fn:()=>fakeDNI()},
+  {id:"nie",t:"NIE",k:/\b(nie|pasaporte)/i,fn:()=>fakeNIE()},
+  {id:"nss",t:"Nº SS",k:/\b(seg.*social|nuss|n[ºo°]?\s*ss)/i,fn:()=>fakeNSS()},
+  {id:"iban",t:"IBAN",k:/\b(iban|cuenta\s*banc|ccc)/i,fn:()=>fakeIBAN()},
+  {id:"tarj",t:"Tarjeta",k:/\b(tarjeta\s*cr|n[ºo°]?\s*tarjeta|credit\s*card)/i,fn:()=>fakeTarjeta()},
+  {id:"matr",t:"Matrícula",k:/\b(matr[ií]cula|veh[ií]culo)/i,fn:()=>fakeMatricula()},
+  {id:"nomComp",t:"Nombre completo",k:/\b(nombre\s*y\s*apellid|nombre\s*completo|paciente|titular|interesad)/i,fn:()=>fakeNombreCompleto()},
+  {id:"ap1",t:"Apellido1",k:/\b(primer[\s_]*apellid|1[ºer\s\.]*apellid)/i,fn:()=>fakeApellido()},
+  {id:"ap2",t:"Apellido2",k:/\b(segundo[\s_]*apellid|2[ºdo\s\.]*apellid)/i,fn:()=>fakeApellido()},
+  {id:"apes",t:"Apellidos",k:/\bapellid/i,fn:()=>fakeApellidos()},
+  {id:"nom",t:"Nombre",k:/\bnombre/i,fn:()=>fakeNombre()},
+  {id:"email",t:"Email",k:/\b(e?\-?mail|correo)/i,fn:()=>fakeEmail()},
+  {id:"tel",t:"Teléfono",k:/\b(tel[eé]fono|tlf|m[oó]vil|contacto\s*tel|tel\b)/i,fn:(o)=>fakeTel(o)},
+  {id:"cp",t:"CP",k:/\b(c\.?p\.?|c[oó]digo\s*postal)/i,fn:()=>fakeCP()},
+  {id:"dir",t:"Dirección",k:/\b(direcci[oó]n|domicilio|calle|v[ií]a)/i,fn:()=>fakeDir()},
+  {id:"mun",t:"Municipio",k:/\b(municipio|localidad|poblaci[oó]n|ciudad)/i,fn:()=>fakeMunicipio()},
+  {id:"prov",t:"Provincia",k:/\b(provincia)/i,fn:()=>fakeProvincia()},
+];
+const ART9 = /\b(diagn[oó]stic|salud|enfermed|patolog|cl[ií]nic|medic|religi[oó]n|raza|[eé]tni|sindical|orientaci[oó]n\s*sex|biom[eé]tric|gen[eé]tic|ideolog[ií]a|cred|huella|adn)/i;
+const QUASI = /\b(fecha\s*nac|nacimiento|edad|sexo|g[eé]nero|c\.?p\.?|c[oó]digo\s*postal|municipio|localidad|provincia)/i;
+
+function detectar(h){ const s=String(h||"").trim(); for(const rg of REGLAS) if(rg.k.test(s)) return rg; return null; }
+function esArt9(h){ return ART9.test(String(h||"")); }
+function esQuasi(h){ return QUASI.test(String(h||"")); }
+
+// PII en texto libre (Patrones)
+const PII_PATTERNS = [
+  {name:'DNI', re:/\b\d{8}[A-Za-z]\b/g, repl:()=>fakeDNI()},
+  {name:'NIE', re:/\b[XYZxyz]\d{7}[A-Za-z]\b/g, repl:()=>fakeNIE()},
+  {name:'IBAN', re:/\bES\d{2}(?:\s|-)?(?:\d{4}(?:\s|-)?){4}\d{4}\b/gi, repl:()=>fakeIBAN()},
+  {name:'EMAIL', re:/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, repl:()=>fakeEmail()},
+  {name:'TEL', re:/(?<!\d)[679]\d{8}(?!\d)/g, repl:()=>fakeTelUno()},
+  {name:'MATR', re:/\b\d{4}(?:\s|-)?[BCDFGHJKLMNPRSTVWXYZ]{3}\b/g, repl:()=>fakeMatricula()},
+];
+
+function scanFreeTextPII_Find(s) {
+  let findings = [];
+  let txt = String(s);
+  for(const p of PII_PATTERNS) {
+    p.re.lastIndex = 0;
+    let match;
+    while((match = p.re.exec(txt)) !== null) {
+      // La propuesta se genera UNA sola vez aquí: lo que el usuario apruebe en el
+      // modal será EXACTAMENTE lo que se escriba en la celda.
+      findings.push({ patternName: p.name, originalText: match[0], index: match.index, proposed: p.repl() });
+    }
+  }
+  return findings;
+}
+
+/* ==========================================================================
+   ESTADO GLOBAL
+   ========================================================================== */
+const STATE = { 
+  files: [], fileIndex: 0, currentSheet: 0, 
+  sessionSalt: null, userSalt: null, coherenceMaps: {}, outputs: [], 
+  logBlob: null, logName: "Informe_global_Anonimizador.txt", 
+  granularity: { date:'year', cp:'2digits', age:10 },
+  piiFindings: [], // Para el modal interactivo
+  perfilActivo: null, avisosCarga: [], htmlBlob: null
+};
+
+async function initSalt() { const arr=new Uint8Array(16); crypto.getRandomValues(arr); STATE.sessionSalt=arr; }
+function updateUserSalt() { const val = $("customSalt").value.trim(); STATE.userSalt = val ? new TextEncoder().encode(val) : null; }
+const $ = id => document.getElementById(id);
+async function sha256Hex(buf) { const h = await crypto.subtle.digest('SHA-256', buf); return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function valorCrudo(cell) { const v=cell.value; if(v==null) return null; if(typeof v==="object"){ if(v.richText) return v.richText.map(x=>x.text).join(""); if(v.formula!=null) return v.result!=null?v.result:""; if(v.text!=null) return v.text; if(v instanceof Date) return v; } return v; }
+function claveCelda(cell) { const v=cell.value; if(v==null) return "∅"; if(v instanceof Date) return "D|"+v.getTime(); if(typeof v==="object"){ if(v.richText) return "R|"+v.richText.map(x=>x.text).join(""); if(v.formula!=null) return "F|"+v.formula+"|"+String(v.result); if(v.text!=null) return "H|"+v.text; return "O|"+JSON.stringify(v); } return (typeof v)[0]+"|"+String(v); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+
+/* ==========================================================================
+   HASH, MÁSCARAS Y GENERALIZACIÓN
+   ========================================================================== */
+async function aplicarHash(orig, ruleId) {
+  const salt = STATE.userSalt || STATE.sessionSalt;
+  const data = new TextEncoder().encode((ruleId||"_")+"|"+String(orig));
+  const salted = new Uint8Array(data.length + salt.length);
+  salted.set(salt,0); salted.set(data,salt.length);
+  const h = await crypto.subtle.digest('SHA-256', salted);
+  // 10 bytes (80 bits): riesgo de colisión despreciable incluso en datasets de millones de filas
+  return Array.from(new Uint8Array(h)).slice(0,10).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+
+function aplicarMascara(orig, ruleId) {
+  const s = String(orig);
+  if(ruleId==="email"){ const at=s.indexOf("@"); if(at<2) return "***@***"; return s[0]+"***"+s.substring(at-1); }
+  if(ruleId==="iban") return s.slice(0,4)+" **** **** **** "+s.slice(-4);
+  if(ruleId==="tarj") return "**** **** **** "+s.replace(/\D/g,"").slice(-4);
+  if(ruleId==="dni"||ruleId==="nie") return "*****"+s.slice(-4);
+  if(ruleId==="tel") return s.replace(/\d(?=\d{3})/g,"*");
+  if(ruleId==="nom"||ruleId==="apes"||ruleId==="ap1"||ruleId==="ap2"||ruleId==="nomComp") return s.split(/\s+/).map(p=>p[0]?p[0]+"***":"").join(" ");
+  if(s.length<=2) return "**";
+  return s[0]+"***"+s[s.length-1];
+}
+
+function aplicarGeneraliza(orig, ruleId) {
+  if(!orig) return orig;
+  const s = String(orig).trim();
+
+  let isDate = ruleId === 'fecha' || orig instanceof Date;
+  let isCP = ruleId === 'cp';
+  let isAge = ruleId === 'edad';
+
+  if (!isDate && !isCP && !isAge && ruleId === "_") {
+     if(s.match(/^\d{2}[\/\-]\d{2}[\/\-]\d{4}/)) isDate = true;
+     else if(s.match(/^\d{4}[\/\-]\d{2}[\/\-]\d{2}/)) isDate = true;
+     else if(s.match(/^\d{5}$/)) isCP = true;
+     else if(!isNaN(Number(orig)) && Number(orig) >= 0 && Number(orig) <= 120) isAge = true;
+  }
+
+  if(isDate) {
+    let d;
+    if(orig instanceof Date) d = orig;
+    else {
+      let parts = s.split(/[\/\-]/);
+      if(parts.length === 3) {
+         if(parts[0].length === 4) d = new Date(parts[0], parts[1]-1, parts[2].substring(0,2));
+         else d = new Date(parts[2].substring(0,4), parts[1]-1, parts[0]);
+      } else d = new Date(orig);
+    }
+    if(d && !isNaN(d.getTime())) {
+      const y = d.getFullYear(); const m = d.getMonth() + 1;
+      if(STATE.granularity.date === 'year') return String(y);
+      if(STATE.granularity.date === 'month') return ("0"+m).slice(-2) + "/" + y;
+      if(STATE.granularity.date === 'quarter') return "T" + Math.ceil(m/3) + "/" + y;
+    }
+    const match = s.match(/\b(19|20)\d{2}\b/);
+    if(match) return match[0];
+  }
+  
+  const n = Number(orig);
+  if(!isNaN(n) && s.match(/^\d+$/)) {
+    if(isCP) {
+      if(STATE.granularity.cp==='2digits') return s.slice(0,2)+"XXX";
+      return s.slice(0,3)+"XX";
+    }
+    if(isAge || (!isCP && !isDate)) {
+      const step = parseInt(STATE.granularity.age) || 10;
+      const base = Math.floor(n/step)*step;
+      return base+"-"+(base+step-1);
+    }
+  }
+  return s.split(/\s+/)[0] || "[GEN]";
+}
+
+async function calcularNuevoValor(originalRaw, col, modo) {
+  const m = modo || col.mode;
+  if(m==="supresion") return null;
+  if(m==="redaccion") return STATE.granularity.redact || "[ANONIMIZADO]";
+  if(m==="hash") return await aplicarHash(originalRaw, col.rule?col.rule.id:"_");
+  if(m==="mascara") return aplicarMascara(originalRaw, col.rule?col.rule.id:"_");
+  if(m==="generaliza") return aplicarGeneraliza(originalRaw, col.rule?col.rule.id:"_");
+  if(col.rule && (!m || m==="ficticio")) return col.rule.fn(originalRaw);
+  return "Ficticio "+rint(1000,9999);
+}
+
+async function calcularConCoherencia(originalRaw, col, coherent) {
+  if(!coherent) return await calcularNuevoValor(originalRaw, col);
+  const ruleKey = (col.rule?col.rule.id:"_generic_")+"|"+(col.mode||"ficticio");
+  const map = STATE.coherenceMaps[ruleKey] || (STATE.coherenceMaps[ruleKey]=new Map());
+  const k = originalRaw instanceof Date ? "D"+originalRaw.getTime() : String(originalRaw);
+  if(map.has(k)) return map.get(k);
+  const v = await calcularNuevoValor(originalRaw, col);
+  map.set(k, v);
+  return v;
+}
+
+/* Aplica estilo a UNA celda sin contaminar a las demás.
+   ExcelJS comparte por referencia el objeto de estilo entre todas las celdas que
+   tienen el mismo formato: mutar cell.font/cell.fill propagaría el cambio a media
+   hoja. La solución es CLONAR el estilo completo y reasignarlo sólo a esta celda. */
+function estiloAisladoDeCelda(cell) {
+  // structuredClone evita cualquier referencia compartida (con respaldo por JSON)
+  try { return structuredClone(cell.style || {}); }
+  catch(e){ return JSON.parse(JSON.stringify(cell.style || {})); }
+}
+
+function aplicarFakeCelda(cell, fakeVal, originalRaw, opts, modo, tipoRegla) {
+  const estilo = estiloAisladoDeCelda(cell);   // copia privada e independiente
+  if(fakeVal===null) cell.value = null;
+  else if(fakeVal instanceof Date) cell.value = fakeVal;
+  else if(typeof originalRaw==="number" && /^-?\d+(\.\d+)?$/.test(String(fakeVal))) cell.value = Number(fakeVal);
+  else cell.value = String(fakeVal);
+
+  if(opts.highlight) estilo.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF59D'}};
+  if(modo==="supresion"||modo==="redaccion")
+    estilo.font = Object.assign({}, estilo.font || {}, {strike:true, color:{argb:'FF888888'}});
+
+  cell.style = estilo;   // se asigna sólo a ESTA celda (numFmt incluido en el estilo)
+
+  if(opts.comment) {
+    let noteTxt = `Anonimizado (${modo}${tipoRegla?` · ${tipoRegla}`:""})`;
+    cell.note = {texts:[{text: noteTxt}], margins:{insetmode:'auto'}};
+  }
+}
+
+/* ==========================================================================
+   LECTURA ARCHIVOS (XLSX, CSV, ODS)
+   ========================================================================== */
+async function readAsWorkbook(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext==='xlsx') {
+    const buf = await file.arrayBuffer();
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    return wb;
+  } else if(ext==='csv') {
+    const text = await file.text();
+    const result = Papa.parse(text, {header:true, skipEmptyLines:true});
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("CSV_Importado");
+    const headers = result.meta.fields||[];
+    if(headers.length) {
+      const headerRow = ws.getRow(1);
+      headers.forEach((h,i)=>headerRow.getCell(i+1).value=h);
+    }
+    result.data.forEach((row,idx)=>{
+      const excelRow = ws.getRow(idx+2);
+      headers.forEach((h,i)=>excelRow.getCell(i+1).value=row[h]);
+    });
+    return wb;
+  } else if(ext==='ods') {
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, {type:'array'});
+    const wb = new ExcelJS.Workbook();
+    workbook.SheetNames.forEach(sheetName => {
+      const wsSheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header:1, defval:""});
+      const excelWs = wb.addWorksheet(sheetName);
+      wsSheet.forEach((row, rowIndex)=>{
+        const excelRow = excelWs.getRow(rowIndex+1);
+        row.forEach((cell, colIndex)=>{
+          if(cell!==undefined && cell!=="") excelRow.getCell(colIndex+1).value=cell;
+        });
+      });
+    });
+    return wb;
+  } else {
+    throw new Error("Formato no soportado: " + ext);
+  }
+}
+
+function checkMacrosAndLinks(workbook) {
+  let warnings = [];
+  try{
+    let nFormulas = 0, hasExternal = false;
+    workbook.worksheets.forEach(ws => {
+      ws.eachRow({includeEmpty:false}, row => {
+        row.eachCell({includeEmpty:false}, cell => {
+          const f = cell.formula || (cell.value && typeof cell.value==="object" && cell.value.formula);
+          if(f){ nFormulas++; if(String(f).includes("[")) hasExternal = true; } // [Libro.xlsx] ⇒ ref. externa
+        });
+      });
+    });
+    if(nFormulas) warnings.push(`⚠ El libro contiene <strong>${nFormulas} fórmula(s)</strong>. Si alguna referencia celdas anonimizadas, su resultado cambiará: revisa el archivo final.`);
+    if(hasExternal) warnings.push('⚠ Se detectaron <strong>referencias a otros libros</strong> (vínculos externos): pueden requerir actualización manual.');
+  }catch(e){ console.warn("checkMacrosAndLinks:", e); }
+  return warnings;
+}
+
+async function handleFiles(fileList) {
+  const arr = Array.from(fileList).filter(f=>/\.(xlsx|csv|ods)$/i.test(f.name));
+  if(!arr.length){ alert("Sólo se admiten archivos .xlsx, .csv o .ods"); return; }
+  
+  // Agregar al listado actual o limpiar
+  if(STATE.files.length === 0) {
+    $("step1").classList.add("hidden"); 
+    $("step2").classList.remove("hidden");
+  }
+  
+  $("go").disabled = true;
+  $("go").innerHTML = '<span class="spinner"></span>Analizando...';
+
+  const avisosCarga = [];
+  for(const f of arr) {
+    try {
+      const wb = await readAsWorkbook(f);
+      const buf = await f.arrayBuffer();
+      const sheets = [];
+      wb.worksheets.forEach(ws => {
+        const headerRow = ws.getRow(1);
+        const cc = ws.columnCount;
+        const headers = [];
+        for(let c=1;c<=cc;c++) {
+          const v = headerRow.getCell(c).value; 
+          headers.push(v==null?"":(typeof v==="object"&&v.richText?v.richText.map(x=>x.text).join(""):String(v))); 
+        }
+        const cols = headers.map((h,i)=>({idx:i, header:h, rule:detectar(h), on:!!detectar(h), mode:"ficticio", art9:esArt9(h), quasi:esQuasi(h), nonEmpty:0}));
+        
+        const lastRow = ws.rowCount;
+        for(let R=2;R<=lastRow;R++){ 
+          const row=ws.getRow(R); 
+          for(let C=1;C<=cc;C++){ if(valorCrudo(row.getCell(C))!=null) cols[C-1].nonEmpty++; } 
+        }
+        sheets.push({name:ws.name, headers, cols, rowCount:lastRow-1});
+      });
+      
+      checkMacrosAndLinks(wb).forEach(w => avisosCarga.push(`<strong>${escapeHtml(f.name)}</strong>: ${w}`));
+      if(/\.(csv|ods)$/i.test(f.name))
+        avisosCarga.push(`ℹ️ <strong>${escapeHtml(f.name)}</strong>: los archivos CSV/ODS se procesan y exportan en formato <strong>.xlsx</strong>.`);
+
+      STATE.files.push({name:f.name, size:f.size, workbook:wb, sheets, hashOrig: await sha256Hex(buf), originalFile: f});
+    } catch(e) {
+      console.error(e);
+      alert("Error al leer el archivo " + f.name);
+    }
+  }
+  // Los avisos se muestran en el panel de alertas del paso 2 (el div del paso 1
+  // queda oculto al cargar, por lo que allí nunca serían visibles)
+  STATE.avisosCarga = (STATE.avisosCarga||[]).concat(avisosCarga);
+  
+  $("go").disabled = false;
+  $("go").textContent = "Anonimizar y descargar";
+
+  STATE.fileIndex = STATE.files.length - 1; // Seleccionar el último añadido
+  STATE.currentSheet = 0;
+  
+  if($("optLoadConfig").checked) { 
+    const key = await schemaKey(STATE.files[STATE.fileIndex].sheets); 
+    const saved = localStorage.getItem("anon_cfg_"+key); 
+    if(saved) aplicarConfigGuardada(STATE.files[STATE.fileIndex].sheets, JSON.parse(saved)); 
+  }
+  
+  renderFileSidebar();
+  renderConfigUI();
+}
+
+async function schemaKey(sheets) { const enc=new TextEncoder(); return await sha256Hex(enc.encode(sheets.map(s=>s.name+":"+s.headers.join("|")).join("§"))); }
+function aplicarConfigGuardada(sheets, cfg) { sheets.forEach((sh,si)=>{ const sc=cfg[si]; if(sc) sh.cols.forEach((c,ci)=>{ if(sc[ci]){ c.on=sc[ci].on; c.mode=sc[ci].mode; } }); }); }
+
+function propagarConfig() { 
+  const ref = STATE.files[STATE.fileIndex].sheets; 
+  STATE.files.forEach((f,fi)=>{ 
+    if(fi===STATE.fileIndex) return; 
+    f.sheets.forEach((sh,si)=>{ 
+      const rsh=ref[si]; 
+      if(rsh) sh.cols.forEach((c,ci)=>{ 
+        const match=rsh.cols.find(x=>x.header===c.header); 
+        if(match){ c.on=match.on; c.mode=match.mode; } 
+      }); 
+    }); 
+  }); 
+}
+
+/* ==========================================================================
+   UI DE CONFIGURACIÓN
+   ========================================================================== */
+function renderFileSidebar() {
+  const container = $('fileListSidebar');
+  container.innerHTML = '';
+  STATE.files.forEach((f,idx)=>{
+    const div = document.createElement('div');
+    div.className = `file-item ${idx===STATE.fileIndex?'active':''}`;
+    div.innerHTML = `<span>${escapeHtml(f.name)}</span><span class="pill">${f.sheets.length} hj</span>`;
+    div.onclick = () => { STATE.fileIndex=idx; STATE.currentSheet=0; renderConfigUI(); renderFileSidebar(); };
+    container.appendChild(div);
+  });
+}
+
+function updateAlerts(sheet) {
+  const alerts = $("alerts"); alerts.innerHTML="";
+  (STATE.avisosCarga||[]).forEach(a => alerts.innerHTML += `<div class="alert warn">${a}</div>`);
+  const art9Cols = sheet.cols.filter(c=>c.art9);
+  if(art9Cols.length) alerts.innerHTML += `<div class="alert danger">⚠ <strong>Categorías especiales (art.9):</strong> ${art9Cols.map(c=>escapeHtml(c.header)).join(", ")}. Se recomienda Hash o Supresión.</div>`;
+  const quasiNoAnon = sheet.cols.filter(c=>c.quasi && !c.on);
+  if(quasiNoAnon.length>=3) alerts.innerHTML += `<div class="alert warn">⚠ <strong>Riesgo de reidentificación por cuasi-identificadores:</strong> ${quasiNoAnon.map(c=>escapeHtml(c.header)).join(", ")}. Se sugiere Generalización.</div>`;
+  updateRiskMeter(sheet);
+}
+
+/* ── Indicador de Protección (v9) ──
+   Puntuación 0-100 de la hoja actual, recalculada en vivo con cada cambio:
+   · base = % de columnas sensibles (con regla, art.9 o cuasi) que están activadas
+   · cualquier columna art.9 sin proteger limita la nota a 40 (riesgo crítico)
+   · ≥3 cuasi-identificadores sin proteger limitan la nota a 70 (efecto Sweeney) */
+function updateRiskMeter(sheet) {
+  const card = $("riskCard"); if(!card) return;
+  const sens     = sheet.cols.filter(c => c.rule || c.art9 || c.quasi);
+  const prot     = sens.filter(c => c.on);
+  const art9Off  = sheet.cols.filter(c => c.art9  && !c.on).length;
+  const quasiOff = sheet.cols.filter(c => c.quasi && !c.on).length;
+
+  let pct = sens.length ? Math.round(prot.length / sens.length * 100) : 100;
+  if(art9Off > 0)       pct = Math.min(pct, 40);
+  else if(quasiOff >= 3) pct = Math.min(pct, 70);
+
+  const color = pct >= 90 ? 'var(--ok)' : pct >= 60 ? 'var(--warn)' : 'var(--danger)';
+  const label = !sens.length ? 'No se han detectado columnas sensibles en esta hoja'
+              : pct >= 90 ? 'Protección alta — configuración sólida'
+              : pct >= 60 ? 'Protección media — revisa los avisos antes de continuar'
+              : 'Protección baja — alto riesgo de reidentificación';
+
+  const CIRC = 326.7;
+  const arc = $("riskArc");
+  arc.style.stroke = color;
+  arc.style.strokeDashoffset = String(CIRC * (1 - pct/100));
+  $("riskPct").textContent = pct;
+  $("riskPct").parentElement.style.color = color;
+  $("riskSub").textContent = label;
+
+  const chip = (txt, cls) => `<span class="risk-chip ${cls}">${txt}</span>`;
+  $("riskChips").innerHTML =
+    chip(`🆔 ${prot.length}/${sens.length} sensibles protegidas`, !sens.length || prot.length===sens.length ? 'good' : 'mid') +
+    chip(`⚕️ art.9 sin proteger: ${art9Off}`, art9Off ? 'bad' : 'good') +
+    chip(`🧩 cuasi-identif. sin proteger: ${quasiOff}`, quasiOff >= 3 ? 'bad' : quasiOff ? 'mid' : 'good');
+}
+
+/* ==========================================================================
+   PERFILES RÁPIDOS (v11) — configuran todas las columnas de un solo clic
+   ========================================================================== */
+// Identificadores DIRECTOS: siempre deben protegerse, aunque además sean art.9
+// (p. ej. "Historia clínica" activa el marcador art.9 pero es un identificador).
+const IDS_DIRECTOS = new Set(["nhc","sip","dni","nie","nss","iban","tarj","matr","nomComp","ap1","ap2","apes","nom","email","tel","dir"]);
+
+function clasificarCol(c) {
+  const id = c.rule ? c.rule.id : null;
+  if(id && IDS_DIRECTOS.has(id)) return "directo";
+  if(c.art9) return "art9";
+  if(id === "cp" || /fecha|nacim|edad/i.test(c.header||"")) return "generalizable";
+  if(id === "mun" || id === "prov") return "geo";
+  if(c.quasi) return "quasi";
+  return "otro";
+}
+
+// null = la columna se deja SIN anonimizar
+const PERFILES = {
+  pruebas: {
+    ico:"💻", nombre:"Pruebas IT",
+    desc:"Datos inventados pero verosímiles para desarrollo y QA.",
+    map:{ directo:"ficticio", art9:"redaccion", generalizable:"ficticio", geo:"ficticio", quasi:null, otro:null }
+  },
+  investigacion: {
+    ico:"🔬", nombre:"Investigación clínica",
+    desc:"Conserva las variables de estudio; identificadores por hash.",
+    map:{ directo:"hash", art9:null, generalizable:"generaliza", geo:null, quasi:null, otro:null }
+  },
+  terceros: {
+    ico:"🤝", nombre:"Compartir con terceros",
+    desc:"Cesión segura manteniendo la posibilidad de cruzar tablas.",
+    map:{ directo:"hash", art9:"redaccion", generalizable:"generaliza", geo:"ficticio", quasi:null, otro:null }
+  },
+  maxima: {
+    ico:"🔒", nombre:"Máxima protección",
+    desc:"Suprime identificadores y categorías especiales del art. 9.",
+    map:{ directo:"supresion", art9:"supresion", generalizable:"generaliza", geo:"supresion", quasi:"supresion", otro:null }
+  }
+};
+
+function aplicarPerfil(pid) {
+  const p = PERFILES[pid]; if(!p) return;
+  const file = STATE.files[STATE.fileIndex]; if(!file) return;
+  // Se aplica a TODAS las hojas del archivo actual
+  file.sheets.forEach(sh => sh.cols.forEach(c => {
+    const clase = clasificarCol(c);
+    let modo = p.map[clase];
+    // "ficticio" sin regla concreta generaría "Ficticio 1234": usamos un modo con sentido
+    if(modo === "ficticio" && !c.rule) modo = (clase === "generalizable") ? "generaliza" : "redaccion";
+    if(!modo) { c.on = false; }
+    else { c.on = true; c.mode = modo; }
+  }));
+  STATE.perfilActivo = pid;
+  renderConfigUI();
+}
+
+function renderPerfiles() {
+  const grid = $("profileGrid"); if(!grid) return;
+  grid.innerHTML = "";
+  Object.entries(PERFILES).forEach(([pid, p]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "profile-card" + (STATE.perfilActivo === pid ? " active" : "");
+    b.innerHTML = `<span class="pf-ico">${p.ico}</span>
+      <div class="pf-name">${p.nombre}</div>
+      <div class="pf-desc">${p.desc}</div>`;
+    b.onclick = () => aplicarPerfil(pid);
+    grid.appendChild(b);
+  });
+}
+
+function renderConfigUI() {
+  const file = STATE.files[STATE.fileIndex];
+  if(!file) return;
+  
+  $("fname").textContent = file.name;
+  $("fmeta").textContent = (file.size/1024).toFixed(1)+" KB · "+file.sheets.length+" hoja(s) · SHA: "+file.hashOrig.slice(0,8)+"…";
+  
+  const tabs = $("tabs"); tabs.innerHTML = "";
+  file.sheets.forEach((sh,i)=>{ 
+    const b = document.createElement("button"); 
+    b.className = "tab"+(i===STATE.currentSheet?" active":""); 
+    b.textContent = sh.name + " (" + sh.rowCount + ")"; 
+    b.onclick = () => { STATE.currentSheet=i; renderConfigUI(); }; 
+    tabs.appendChild(b); 
+  });
+  
+  if(STATE.files.length > 1 && !$("optSameConfig").checked){ 
+    const nav = document.createElement("button"); 
+    nav.className = "tab"; nav.style.marginLeft = "auto"; 
+    nav.textContent = STATE.fileIndex < STATE.files.length-1 ? "Siguiente Archivo →" : "Volver al primero"; 
+    nav.onclick = () => { STATE.fileIndex = (STATE.fileIndex+1)%STATE.files.length; STATE.currentSheet=0; renderConfigUI(); renderFileSidebar(); }; 
+    tabs.appendChild(nav); 
+  }
+  
+  const sheet = file.sheets[STATE.currentSheet];
+  updateAlerts(sheet);
+  renderPerfiles();
+  
+  let list = $("colsList"); const sheetKey = STATE.fileIndex + ":" + STATE.currentSheet;
+  if(!list) { $("sheetsBody").innerHTML=`<div class="cols" id="colsList"></div>`; list=$("colsList"); }
+  
+  if(list.dataset.sheetKey !== sheetKey || list.children.length !== sheet.cols.length) {
+    list.dataset.sheetKey = sheetKey; list.innerHTML = "";
+    sheet.cols.forEach((c,i)=>{
+      const div = document.createElement("div"); div.className="col"+(c.on?" on":"")+(c.art9?" art9":"");
+      const modeOpts = Object.entries({
+        ficticio:"🎭 Datos ficticios", mascara:"● Enmascarado", hash:"# Hash",
+        generaliza:"≈ Generalización", redaccion:"▮ Sustitución", supresion:"∅ Supresión"
+      }).map(([k,v])=>`<option value="${k}" ${c.mode===k?"selected":""}>${v}</option>`).join("");
+      
+      div.innerHTML = `
+        <label class="sw"><input type="checkbox" ${c.on?"checked":""} data-i="${i}" data-act="toggle"><span class="tr"></span></label>
+        <span class="name">${escapeHtml(c.header||"(sin nombre)")} ${c.art9?'<span class="pill art9">art.9</span>':''}${c.quasi?'<span class="pill cuasi">cuasi</span>':''}</span>
+        <span class="type">${c.rule?c.rule.t:(c.on?"genérico":"no sensible")}</span>
+        <select data-i="${i}" data-act="mode" ${c.on?"":"disabled"}>${modeOpts}</select>
+        <span class="meta">${c.nonEmpty} valores</span>
+      `;
+      list.appendChild(div);
+    });
+  } else {
+    sheet.cols.forEach((c,i)=>{ 
+      const div=list.children[i]; if(!div) return; 
+      div.className="col"+(c.on?" on":"")+(c.art9?" art9":""); 
+      const inp=div.querySelector("input[data-act='toggle']"); if(inp) inp.checked=c.on; 
+      const sel=div.querySelector("select[data-act='mode']"); if(sel){ sel.value=c.mode; sel.disabled=!c.on; } 
+    });
+  }
+  
+  list.querySelectorAll("input[data-act='toggle']").forEach(inp=>{
+    inp.onchange = e => {
+      const i=+e.target.dataset.i; sheet.cols[i].on=e.target.checked;
+      STATE.perfilActivo = null;      // ajuste manual: ya no coincide con ningún perfil
+      renderConfigUI(); // re-render to update alerts and styles
+    };
+  });
+  list.querySelectorAll("select[data-act='mode']").forEach(sel=>{
+    sel.onchange = e => {
+      const i=+e.target.dataset.i; sheet.cols[i].mode=e.target.value;
+      STATE.perfilActivo = null; renderPerfiles();
+    };
+  });
+}
+
+// ========================== VISTA PREVIA ==========================
+$("prevBtn").onclick = async () => {
+  STATE.coherenceMaps = {}; // Limpiar caché para que los cambios de configuración se apliquen
+  STATE.granularity.redact = $("redactGranularity").value;
+  STATE.granularity.date = $("dateGranularity").value;
+  STATE.granularity.cp = $("cpGranularity").value;
+  STATE.granularity.age = $("ageGranularity").value;
+  updateUserSalt();
+  
+  const file = STATE.files[STATE.fileIndex], sheet = file.sheets[STATE.currentSheet], ws = file.workbook.getWorksheet(sheet.name);
+  const cols = sheet.cols, N = Math.min(10, sheet.rowCount), headers = sheet.headers;
+  
+  const rowPromises = [];
+  for(let R=2; R<=N+1; R++) { 
+    const row = ws.getRow(R);
+    const colPromises = [];
+    for(let C=1; C<=headers.length; C++) { 
+      const col = cols[C-1], original = valorCrudo(row.getCell(C));
+      if(col.on && original!=null && original!=="") {
+        colPromises.push(calcularConCoherencia(original, col, $("optCoherent").checked).then(fake => ({ fake, original, changed: true })));
+      } else { 
+        colPromises.push(Promise.resolve({ fake: original, original, changed: false }));
+      }
+    } 
+    rowPromises.push(Promise.all(colPromises));
+  } 
+  
+  const rowsData = await Promise.all(rowPromises);
+  
+  // Vista Antes → Después: el original tachado en gris junto al valor nuevo (v11)
+  const fmtVal = v => v instanceof Date ? v.toISOString().slice(0,10) : (v==null ? "" : String(v));
+  let html = "<thead><tr>" + headers.map(h=>`<th>${escapeHtml(h)}</th>`).join("") + "</thead><tbody>";
+  for (const colsData of rowsData) {
+    html += "<tr>";
+    for (const data of colsData) {
+      if (data.changed) {
+        const nuevo = data.fake === null
+          ? '<span class="pv-empty">(vacío)</span>'
+          : `<span class="pv-new">${escapeHtml(fmtVal(data.fake))}</span>`;
+        html += `<td class="changed"><span class="pv-old">${escapeHtml(fmtVal(data.original))}</span>`
+             +  `<span class="pv-arrow">→</span>${nuevo}</td>`;
+      } else {
+        html += `<td>${escapeHtml(fmtVal(data.original))}</td>`;
+      }
+    }
+    html += "</tr>";
+  }
+  html += "</tbody>"; 
+  $("prevTable").innerHTML = html; 
+  $("prevCard").classList.remove("hidden"); 
+  $("prevCard").scrollIntoView({behavior:"smooth"});
+};
+$("prevClose").onclick = () => $("prevCard").classList.add("hidden");
+
+// ========================== PROCESO PRINCIPAL ==========================
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// PII Interactive logic
+let piiResolve = null;
+
+function renderPIIModal() {
+  const list = $("piiList");
+  list.innerHTML = "";
+  if(STATE.piiFindings.length === 0) {
+    list.innerHTML = "<p>No hay detecciones pendientes.</p>";
+    return;
+  }
+  
+  STATE.piiFindings.forEach((f, idx) => {
+    const div = document.createElement("div");
+    div.className = "pii-finding";
+    div.innerHTML = `
+      <label class="check"><input type="checkbox" checked data-idx="${idx}"></label>
+      <div class="pii-details">
+        <span class="pii-loc">Archivo: ${escapeHtml(f.file)} · Hoja: ${escapeHtml(f.sheet)} · Col: ${escapeHtml(f.colName)} · Fila: ${f.row}</span>
+        <div>Patrón detectado: <strong>${f.patternName}</strong></div>
+        <div class="pii-context">
+          Original: ...${escapeHtml(f.originalText)}...<br>
+          Propuesto: <span class="pii-mark">${escapeHtml(f.proposed)}</span>
+        </div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+$("piiSelectAll").onclick = () => { document.querySelectorAll("#piiList input[type='checkbox']").forEach(i=>i.checked=true); };
+$("piiDeselectAll").onclick = () => { document.querySelectorAll("#piiList input[type='checkbox']").forEach(i=>i.checked=false); };
+$("piiCancelBtn").onclick = () => { $("piiOverlay").classList.remove("open"); if(piiResolve) piiResolve(false); };
+$("piiConfirmBtn").onclick = () => { 
+  document.querySelectorAll("#piiList input[type='checkbox']").forEach(i=>{
+    const idx = parseInt(i.dataset.idx);
+    STATE.piiFindings[idx].accepted = i.checked;
+  });
+  $("piiOverlay").classList.remove("open"); 
+  if(piiResolve) piiResolve(true); 
+};
+
+// Start execution
+$("go").onclick = async () => {
+  const btn = $("go"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando PII...';
+  
+  STATE.granularity.redact = $("redactGranularity").value;
+  STATE.granularity.date = $("dateGranularity").value;
+  STATE.granularity.cp = $("cpGranularity").value;
+  STATE.granularity.age = $("ageGranularity").value;
+  updateUserSalt();
+  
+  if($("optSameConfig").checked && STATE.files.length>1) propagarConfig();
+  
+  STATE.coherenceMaps = {}; STATE.outputs = []; STATE.piiFindings = [];
+  const opts = { 
+    highlight: $("optHighlight").checked, comment: $("optComment").checked, 
+    summary: $("optSummary").checked, coherent: $("optCoherent").checked, 
+    scanFree: $("optScanFree").checked, onlyModified: $("optOnlyModifiedSheets").checked 
+  };
+  
+  const progDiv = $("progressBar"); if(progDiv) progDiv.classList.remove("hidden"); const progFill = progDiv.querySelector("div");
+  
+  // Paso 1: Escanear texto libre (si procede) para el modal
+  if(opts.scanFree) {
+    for(let fi=0; fi<STATE.files.length; fi++) {
+      const file = STATE.files[fi];
+      for(const sheetCfg of file.sheets) {
+        const ws = file.workbook.getWorksheet(sheetCfg.name);
+        for(const col of sheetCfg.cols) {
+          if(col.on) continue; // Si ya se va a anonimizar, no es "texto libre"
+          const C = col.idx+1;
+          for(let R=2; R<=ws.rowCount; R++){
+            if(R%5000===0) await new Promise(r=>setTimeout(r, 0)); // Yield to avoid freezing
+            const cell = ws.getRow(R).getCell(C);
+            const original = valorCrudo(cell);
+            if(original==null || original==="" || typeof original==="number" || original instanceof Date) continue;
+            const findings = scanFreeTextPII_Find(original);
+            findings.forEach(f => {
+              STATE.piiFindings.push({
+                file: file.name, sheet: sheetCfg.name, colName: col.header, row: R,
+                originalText: f.originalText, patternName: f.patternName,
+                index: f.index, proposed: f.proposed,
+                cellRef: cell, accepted: true
+              });
+            });
+          }
+        }
+      }
+      if(progFill) progFill.style.width = ((fi/STATE.files.length)*30)+"%";
+    }
+  }
+
+  // Si hay findings de PII, mostramos modal interactivo
+  if(STATE.piiFindings.length > 0) {
+    btn.innerHTML = 'Esperando revisión...';
+    renderPIIModal();
+    $("piiOverlay").classList.add("open");
+    const proceed = await new Promise(resolve => { piiResolve = resolve; });
+    if(!proceed) {
+      btn.disabled = false; btn.textContent = "Anonimizar y descargar";
+      if(progDiv) progDiv.classList.add("hidden");
+      return; // Cancelled
+    }
+  }
+
+  btn.innerHTML = '<span class="spinner"></span>Procesando archivos...';
+
+  // Paso 2: Procesamiento real de archivos
+  let infoGlobal = [];
+  for(let fi=0; fi<STATE.files.length; fi++) {
+    if(progFill) progFill.style.width = (30 + ((fi/STATE.files.length)*70))+"%";
+    const file = STATE.files[fi];
+    
+    try {
+      const fileSummary = await procesarArchivo(file, opts, fi);
+      infoGlobal.push(fileSummary);
+    } catch(err) {
+      alert(`Error procesando ${file.name}: \n\n${err.message}`);
+      console.error(err);
+    }
+  }
+  
+  if(progFill) progFill.style.width = "100%";
+  setTimeout(()=> { if(progDiv) progDiv.classList.add("hidden"); }, 500);
+
+  // Guardar Config
+  if($("optSaveConfig").checked) { 
+    const cfg = STATE.files[0].sheets.map(sh=>sh.cols.map(c=>({on:c.on,mode:c.mode}))); 
+    const key = await schemaKey(STATE.files[0].sheets); 
+    localStorage.setItem("anon_cfg_"+key, JSON.stringify(cfg)); 
+  }
+  
+  // Preparar Informe Global (texto plano + informe de cumplimiento en HTML)
+  STATE.logBlob = construirInformeGlobal(infoGlobal, opts);
+  try { STATE.htmlBlob = new Blob([construirInformeHTML(infoGlobal, opts)], {type:"text/html;charset=utf-8"}); }
+  catch(e){ console.error("Informe HTML:", e); STATE.htmlBlob = null; }
+  
+  $("doneMsg").innerHTML = `Procesados <strong>${STATE.files.length}</strong> archivo(s).<br>Un total de <strong>${infoGlobal.reduce((s,x)=>s+x.celdasCambiadas,0)}</strong> celdas sustituidas.`;
+  const dlList = $("dlList"); dlList.innerHTML = "";
+  
+  STATE.outputs.forEach((o,i)=>{ 
+    const div = document.createElement("div"); div.className="filebar"; 
+    div.innerHTML = `<div class="fi">${escapeHtml(o.name)}</div><div class="fz">${(o.blob.size/1024).toFixed(1)} KB</div>`; 
+    const b = document.createElement("button"); b.className="btn btn-primary"; b.style.cssText="margin:0;width:auto;padding:8px 14px;font-size:.9rem;"; 
+    b.textContent="Descargar"; b.onclick=()=>downloadBlob(o.blob, o.name); 
+    div.appendChild(b); dlList.appendChild(div); 
+  });
+  
+  if(STATE.outputs[0]) downloadBlob(STATE.outputs[0].blob, STATE.outputs[0].name);
+  
+  $("step2").classList.add("hidden"); $("step3").classList.remove("hidden");
+  btn.disabled = false; btn.textContent = "Anonimizar y descargar";
+};
+
+async function procesarArchivo(file, opts, fileIdx) {
+  if (!file.originalFile) {
+    throw new Error("El archivo original no está disponible. Vuelve a cargarlo.");
+  }
+  const wb = await readAsWorkbook(file.originalFile);
+  let totalCambiadas = 0, cambiosPorRegla = {}, cambiosFreeText = 0;
+  
+  const sheetsToProcess = opts.onlyModified ? file.sheets.filter(s => s.cols.some(c=>c.on)) : file.sheets;
+  
+  // Procesar columnas marcadas
+  for(const sheetCfg of sheetsToProcess) {
+    const ws = wb.getWorksheet(sheetCfg.name);
+    const cols = sheetCfg.cols;
+    const activeIdx = new Set(cols.filter(c=>c.on).map(c=>c.idx));
+    const lastRow = ws.rowCount, lastCol = ws.columnCount;
+    
+    // Snapshot para self-test — UNA entrada por FILA (claves de celda concatenadas).
+    // Misma garantía que el snapshot por celda con ~lastCol veces menos entradas en
+    // memoria: apto también para archivos muy grandes.
+    const snapshot = new Map();
+    if($("optSelfTest").checked){
+      for(let R=1;R<=lastRow;R++) {
+        if(R%5000===0) await new Promise(r=>setTimeout(r,0)); // Anti-freeze
+        const row = ws.getRow(R); const parts = [];
+        for(let C=1;C<=lastCol;C++) {
+          if(!(activeIdx.has(C-1) && R>1)) parts.push(claveCelda(row.getCell(C)));
+        }
+        snapshot.set(R, parts.join("\u0001"));
+      }
+    }
+
+    // Anonimización principal
+    for(const col of cols){
+      if(!col.on) continue;
+      const C = col.idx+1;
+      for(let R=2;R<=lastRow;R++){
+        if(R%5000===0) await new Promise(r=>setTimeout(r,0)); // Anti-freeze
+        const cell = ws.getRow(R).getCell(C);
+        const original = valorCrudo(cell);
+        if(original==null || original==="") continue;
+        
+        const fake = await calcularConCoherencia(original, col, opts.coherent);
+        aplicarFakeCelda(cell, fake, original, opts, col.mode, col.rule?col.rule.t:"genérico");
+        totalCambiadas++;
+        
+        const k = (col.rule?col.rule.id:"_generic_");
+        cambiosPorRegla[k] = (cambiosPorRegla[k]||0)+1;
+      }
+    }
+    
+    // Auto-test (Integridad) — comparación por fila; en caso de fallo se localiza
+    // la celda exacta. (Los reemplazos de texto libre se aplican DESPUÉS de este
+    // test, por lo que aquí toda celda no marcada debe estar aún intacta.)
+    if($("optSelfTest").checked){
+      for(let R=1;R<=lastRow;R++) {
+        if(R%5000===0) await new Promise(r=>setTimeout(r,0)); // Anti-freeze
+        const row = ws.getRow(R); const parts = []; const colsIncl = [];
+        for(let C=1;C<=lastCol;C++){
+          if(activeIdx.has(C-1) && R>1) continue;
+          parts.push(claveCelda(row.getCell(C))); colsIncl.push(C);
+        }
+        const ahora = parts.join("\u0001"), antes = snapshot.get(R);
+        if(ahora !== antes){
+          const a = (antes||"").split("\u0001");
+          let bad = 0; while(bad < parts.length && a[bad] === parts[bad]) bad++;
+          const C = colsIncl[bad];
+          throw new Error(`Verificación de integridad fallida en hoja "${sheetCfg.name}", ${C?("celda "+XL(C)+R):("fila "+R)}. ¡Un dato no marcado fue alterado!`);
+        }
+      }
+    }
+  }
+
+  // Aplicar reemplazos PII de texto libre (previamente aceptados en el modal).
+  // Cada ocurrencia se sustituye por SU índice exacto y con el MISMO valor mostrado
+  // en el modal. Se procesa de atrás hacia delante para no desplazar los índices.
+  // IMPORTANTE: cellRef apunta al workbook de análisis; aquí trabajamos sobre el
+  // workbook recién releído (wb), así que localizamos la celda por hoja/fila/columna.
+  const filePII = STATE.piiFindings.filter(f => f.file === file.name && f.accepted);
+  if(filePII.length > 0) {
+    // Agrupar por celda (hoja + fila + columna)
+    const cellGroups = new Map();
+    filePII.forEach(f => {
+      const sheetCfg = file.sheets.find(s => s.name === f.sheet);
+      const colIdx = sheetCfg ? sheetCfg.cols.findIndex(c => c.header === f.colName) : -1;
+      if(colIdx < 0) return;
+      const key = f.sheet + "¦" + f.row + "¦" + colIdx;
+      if(!cellGroups.has(key)) cellGroups.set(key, {sheet:f.sheet, row:f.row, col:colIdx+1, findings:[]});
+      cellGroups.get(key).findings.push(f);
+    });
+
+    for(const g of cellGroups.values()) {
+      const ws = wb.getWorksheet(g.sheet);
+      if(!ws) continue;
+      const cell = ws.getRow(g.row).getCell(g.col);
+      let txt = String(valorCrudo(cell));
+      let applied = 0;
+      // De atrás hacia delante: los índices anteriores no se ven afectados
+      g.findings.sort((a,b) => b.index - a.index);
+      for(const f of g.findings) {
+        // Verificar que el texto original sigue en su posición (defensa ante desfases)
+        if(txt.substr(f.index, f.originalText.length) === f.originalText) {
+          txt = txt.slice(0, f.index) + f.proposed + txt.slice(f.index + f.originalText.length);
+          applied++;
+        }
+      }
+      if(applied > 0) {
+        const estilo = estiloAisladoDeCelda(cell);   // copia privada: no contamina otras celdas
+        cell.value = txt;
+        if(opts.highlight) estilo.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE082'}};
+        cell.style = estilo;
+        if(opts.comment) cell.note = {texts:[{text:`PII libre detectada y sustituida (${applied})`}]};
+        cambiosFreeText += applied;
+      }
+    }
+  }
+
+  if(opts.summary) {
+    let resumenWs = wb.getWorksheet("Anonimización");
+    if(resumenWs) wb.removeWorksheet(resumenWs.id);
+    resumenWs = wb.addWorksheet("Anonimización", {properties:{tabColor:{argb:'FFFF5A5F'}}});
+    await escribirResumenHoja(resumenWs, file, opts, totalCambiadas, cambiosPorRegla, cambiosFreeText);
+  }
+
+  if(opts.onlyModified) {
+    const keepNames = new Set(sheetsToProcess.map(s=>s.name));
+    if(opts.summary) keepNames.add("Anonimización");
+    wb.worksheets.slice().forEach(w => { if(!keepNames.has(w.name)) wb.removeWorksheet(w.id); });
+  }
+
+  const outBuf = await wb.xlsx.writeBuffer();
+  const outName = file.name.replace(/\.(xlsx|csv|ods)$/i,"") + "_anonimizado.xlsx";
+  const blob = new Blob([outBuf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const hashOut = await sha256Hex(outBuf);
+  
+  // k-anonimato REAL, calculado sobre los valores de SALIDA del archivo procesado
+  const kInfo = await calcularKAnonimato(wb, file);
+
+  STATE.outputs.push({name: outName, blob, hashOrig: file.hashOrig, hashOut});
+
+  return {
+    file: file.name, out: outName, hashOrig: file.hashOrig, hashOut,
+    sheets: file.sheets.map(s=>({
+      name:s.name, rows:s.rowCount,
+      sens: s.cols.filter(c=>c.rule||c.art9||c.quasi).length,
+      prot: s.cols.filter(c=>(c.rule||c.art9||c.quasi)&&c.on).length,
+      cols: s.cols.filter(c=>c.on).map(c=>({h:c.header, t:c.rule?c.rule.t:"genérico", m:c.mode, art9:c.art9}))
+    })),
+    celdasCambiadas: totalCambiadas, cambiosFreeText, kAnonimato: kInfo.k, kDetalle: kInfo.detalle
+  };
+}
+
+/* k-anonimato real: para cada hoja con ≥2 cuasi-identificadores detectados, agrupa
+   las filas por la combinación de sus valores FINALES (tras anonimizar); k de la hoja
+   es el tamaño del grupo más pequeño, y el del archivo, el mínimo entre hojas.
+   Coste: lineal en filas × cuasi-columnas; corre en local, sin coste económico. */
+async function calcularKAnonimato(wb, file) {
+  let kMin = Infinity; const detalle = [];
+  for(const sheetCfg of file.sheets){
+    const quasiCols = sheetCfg.cols.filter(c => c.quasi);
+    if(quasiCols.length < 2) continue;
+    const ws = wb.getWorksheet(sheetCfg.name);
+    if(!ws || ws.rowCount < 2) continue;
+    const groups = new Map();
+    for(let R=2; R<=ws.rowCount; R++){
+      if(R%5000===0) await new Promise(r=>setTimeout(r,0)); // Anti-freeze
+      const row = ws.getRow(R);
+      let vacia = true;
+      const key = quasiCols.map(c => {
+        const v = valorCrudo(row.getCell(c.idx+1));
+        if(v!=null && v!=="") vacia = false;
+        return v==null ? "∅" : (v instanceof Date ? "D"+v.getTime() : String(v));
+      }).join("¦");
+      if(vacia) continue; // fila sin datos en los cuasi-identificadores
+      groups.set(key, (groups.get(key)||0)+1);
+    }
+    if(!groups.size) continue;
+    let k = Infinity; for(const n of groups.values()) if(n<k) k=n;
+    detalle.push({hoja: sheetCfg.name, k, cols: quasiCols.map(c=>c.header)});
+    if(k < kMin) kMin = k;
+  }
+  return { k: kMin===Infinity ? 0 : kMin, detalle };
+}
+
+function XL(c){ let s=""; while(c>0){ const m=(c-1)%26; s=String.fromCharCode(65+m)+s; c=Math.floor((c-1)/26);} return s; }
+
+async function escribirResumenHoja(ws, file, opts, total, porRegla, freeText) {
+  ws.columns = [{width:35}, {width:60}];
+  const kv = (k,v) => { const row=ws.addRow([k,String(v)]); row.getCell(1).font={bold:true}; };
+  kv("Sello temporal (Fecha ISO)", new Date().toISOString()); 
+  kv("Archivo origen", file.name); 
+  kv("SHA-256 Origen (Cadena de custodia)", file.hashOrig);
+  kv("Total celdas sensibles modificadas", total); 
+  kv("Detecciones de texto libre aplicadas", freeText);
+  kv("Clave hash utilizada", STATE.userSalt ? "Personalizada (Determinista entre sesiones)" : "Aleatoria (De sesión)");
+  kv("Granularidad de generalización", `Fechas:${STATE.granularity.date} | CP:${STATE.granularity.cp} | Edad:${STATE.granularity.age}`);
+  ws.addRow([]); 
+  kv("CONFIGURACIÓN POR COLUMNA", "");
+  
+  file.sheets.forEach(sh => { 
+    if(!opts.onlyModified || sh.cols.some(c=>c.on)){
+      kv("Hoja", sh.name); 
+      sh.cols.filter(c=>c.on).forEach(c => { 
+        ws.addRow([c.header, `[${c.rule?c.rule.t:"genérico"}] · Modo: ${c.mode.toUpperCase()}${c.art9?' · (ALERTA ART.9)':''}`]); 
+      }); 
+      ws.addRow([]); 
+    }
+  });
+}
+
+function construirInformeGlobal(infos, opts) {
+  const sep = "═".repeat(70);
+  const L = []; 
+  const now = new Date();
+  L.push(sep);
+  L.push("      INFORME GLOBAL DE ANONIMIZACIÓN");
+  L.push(sep);
+  L.push("");
+  L.push("  Fecha (ISO 8601) : " + now.toISOString());
+  L.push("  Motor            : ExcelJS · 100% local");
+  L.push("  Hashes           : " + (STATE.userSalt ? "Clave Personalizada (Sal Determinista)" : "Clave Aleatoria de Sesión (Irrecuperable)"));
+  L.push("  Archivos procesados: " + infos.length);
+  L.push("");
+  L.push("  ─── OPCIONES GLOBALES ───");
+  Object.entries(opts).forEach(([k,v]) => L.push("    " + k.padEnd(14," ") + " : " + (v ? "Sí" : "No")));
+  L.push("");
+  infos.forEach((info, i) => { 
+    L.push("  ─── ARCHIVO " + (i+1) + " ───");
+    L.push("    Origen     : " + info.file);
+    L.push("    Resultado  : " + info.out);
+    L.push("    SHA-256 in : " + info.hashOrig);
+    L.push("    SHA-256 out: " + info.hashOut);
+    L.push("    Celdas sustituidas: " + info.celdasCambiadas + " directas + " + info.cambiosFreeText + " en texto libre");
+    if(info.kAnonimato > 0){
+      L.push("    Riesgo reidentificación: k-anonimato CALCULADO = " + info.kAnonimato + (info.kAnonimato < 5 ? "  ⚠ k<5: riesgo alto, considere generalizar más" : "  ✓"));
+      (info.kDetalle||[]).forEach(d => L.push('      · Hoja "' + d.hoja + '": k=' + d.k + " sobre [" + d.cols.join(", ") + "]"));
+      L.push("      Nota: k calculado sobre los valores finales de los cuasi-identificadores");
+      L.push("      detectados automáticamente; otros atributos no contemplados podrían");
+      L.push("      reducir el k efectivo.");
+    } else {
+      L.push("    Riesgo reidentificación: k-anonimato no aplicable (<2 cuasi-identificadores detectados)");
+    }
+    
+    if (info.sheets && info.sheets.length > 0) {
+      info.sheets.forEach(s => {
+        L.push("    Hoja: " + s.name + " (" + s.rows + " filas)");
+        if (s.cols.length > 0) {
+          s.cols.forEach(c => {
+            const modeName = c.m.toUpperCase();
+            L.push("      • " + c.h.padEnd(34, " ") + " → " + c.t + " / " + modeName + (c.art9 ? " ⚠ art.9" : ""));
+          });
+        } else {
+          L.push("      (Ninguna columna modificada en esta hoja)");
+        }
+      });
+    }
+    L.push("");
+  });
+  
+  L.push("  ─── MARCO NORMATIVO ───");
+  L.push("    • RGPD (UE) 2016/679 — arts. 4.5, 5, 6, 9, 24, 25, 32");
+  L.push("    • LOPDGDD 3/2018 — arts. 5, 28");
+  L.push("    • AEPD: Orientaciones y garantías en los procedimientos de anonimización (2016)");
+  L.push("    • EDPB/WP29: Opinion 05/2014 on Anonymisation Techniques");
+  L.push("");
+  L.push("  VERIFICACIÓN DE INTEGRIDAD: SUPERADA EN TODOS LOS ARCHIVOS");
+  L.push("");
+  L.push(sep);
+  return new Blob([L.join("\r\n")], {type:"text/plain;charset=utf-8"});
+}
+
+/* ==========================================================================
+   INFORME DE CUMPLIMIENTO EN HTML (v11)
+   Documento autocontenido y listo para imprimir/guardar como PDF, pensado para
+   entregarse al DPD, a un auditor o al destinatario de los datos.
+   ========================================================================== */
+const MODO_NOMBRE = { ficticio:"Datos ficticios", mascara:"Enmascarado", hash:"Hash",
+                      generaliza:"Generalización", redaccion:"Sustitución", supresion:"Supresión" };
+
+function anilloSVG(pct, color) {
+  const CIRC = 2 * Math.PI * 52, off = CIRC * (1 - pct/100);
+  return `<svg viewBox="0 0 120 120" width="112" height="112" role="img" aria-label="Cobertura ${pct}%">
+    <circle cx="60" cy="60" r="52" fill="none" stroke="#e3e8ee" stroke-width="11"/>
+    <circle cx="60" cy="60" r="52" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round"
+            stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="61" text-anchor="middle" dominant-baseline="central" font-size="27" font-weight="800"
+          fill="${color}" font-family="system-ui,-apple-system,sans-serif">${pct}%</text>
+  </svg>`;
+}
+
+function construirInformeHTML(infos, opts) {
+  const now = new Date();
+  const fechaLarga = now.toLocaleDateString("es-ES", {day:"numeric", month:"long", year:"numeric"}) +
+                     " · " + now.toLocaleTimeString("es-ES", {hour:"2-digit", minute:"2-digit"});
+
+  const totalCeldas = infos.reduce((s,x)=>s+x.celdasCambiadas, 0);
+  const totalFree   = infos.reduce((s,x)=>s+x.cambiosFreeText, 0);
+  let sensTot = 0, protTot = 0;
+  infos.forEach(i => (i.sheets||[]).forEach(s => { sensTot += s.sens||0; protTot += s.prot||0; }));
+  const cobertura = sensTot ? Math.round(protTot/sensTot*100) : 100;
+  const colorCob = cobertura >= 90 ? "#16a34a" : cobertura >= 60 ? "#b45309" : "#dc2626";
+
+  const ks = infos.map(i=>i.kAnonimato).filter(k=>k>0);
+  const kMin = ks.length ? Math.min(...ks) : 0;
+  const kTxt = kMin ? "k = " + kMin : "N/A";
+  const kColor = !kMin ? "#5a6b7b" : kMin >= 5 ? "#16a34a" : kMin >= 2 ? "#b45309" : "#dc2626";
+
+  const optNombres = { highlight:"Resaltar celdas", comment:"Comentario en celda", summary:'Hoja "Anonimización"',
+                       coherent:"Coherencia referencial", scanFree:"PII en texto libre", onlyModified:"Sólo hojas modificadas" };
+  const chipsOpts = Object.entries(opts).map(([k,v]) =>
+    `<span class="chip ${v?'on':'off'}">${v?'✓':'✕'} ${optNombres[k]||k}</span>`).join("");
+
+  const bloques = infos.map((info, i) => {
+    const kb = info.kAnonimato > 0
+      ? `<span class="kbadge" style="background:${info.kAnonimato>=5?'#dcfce7':info.kAnonimato>=2?'#fef3c7':'#fee2e2'};color:${info.kAnonimato>=5?'#16a34a':info.kAnonimato>=2?'#b45309':'#dc2626'}">k = ${info.kAnonimato}${info.kAnonimato<5?' · riesgo alto':' · adecuado'}</span>`
+      : `<span class="kbadge" style="background:#eef1f5;color:#5a6b7b">k no aplicable (&lt;2 cuasi-identificadores)</span>`;
+    const kdet = (info.kDetalle||[]).map(d =>
+      `<div class="kdet">Hoja <strong>${escapeHtml(d.hoja)}</strong>: k = ${d.k} · sobre [${d.cols.map(escapeHtml).join(", ")}]</div>`).join("");
+
+    const hojas = (info.sheets||[]).map(s => {
+      if(!s.cols.length) return `<div class="hoja"><div class="hoja-t">${escapeHtml(s.name)} <span class="muted">· ${s.rows} filas</span></div><div class="muted sm">Ninguna columna modificada en esta hoja.</div></div>`;
+      const filas = s.cols.map(c => `<tr>
+          <td><strong>${escapeHtml(c.h)}</strong>${c.art9?' <span class="tag art9">art. 9</span>':''}</td>
+          <td>${escapeHtml(c.t)}</td>
+          <td><span class="tag modo">${MODO_NOMBRE[c.m]||escapeHtml(c.m)}</span></td>
+        </tr>`).join("");
+      return `<div class="hoja">
+        <div class="hoja-t">${escapeHtml(s.name)} <span class="muted">· ${s.rows} filas · ${s.prot}/${s.sens} columnas sensibles tratadas</span></div>
+        <table><thead><tr><th>Columna</th><th>Dato detectado</th><th>Modo aplicado</th></tr></thead><tbody>${filas}</tbody></table>
+      </div>`;
+    }).join("");
+
+    return `<section class="file-block">
+      <div class="fb-head"><span class="fb-num">${i+1}</span>
+        <div><div class="fb-name">${escapeHtml(info.file)}</div>
+        <div class="muted sm">→ ${escapeHtml(info.out)}</div></div></div>
+      <div class="metrics">
+        <div><span class="m-lab">Celdas sustituidas</span><span class="m-val">${info.celdasCambiadas}</span></div>
+        <div><span class="m-lab">PII en texto libre</span><span class="m-val">${info.cambiosFreeText}</span></div>
+        <div><span class="m-lab">Riesgo reidentificación</span>${kb}</div>
+      </div>
+      ${kdet}
+      <div class="sha"><span class="sha-lab">SHA-256 origen</span>${info.hashOrig}</div>
+      <div class="sha"><span class="sha-lab">SHA-256 salida</span>${info.hashOut}</div>
+      ${hojas}
+    </section>`;
+  }).join("");
+
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe de Anonimización — ${now.toISOString().slice(0,10)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1d2b3a;
+       background:#f5f7fa;line-height:1.55;padding:28px 16px}
+  .page{max-width:900px;margin:0 auto;background:#fff;border-radius:16px;
+        box-shadow:0 8px 28px rgba(29,43,58,.10);overflow:hidden}
+  header{padding:30px 38px 24px;border-left:7px solid #ff5a5f}
+  h1{font-size:1.65rem;letter-spacing:-.02em}
+  .subtitle{color:#5a6b7b;font-size:.92rem;margin-top:5px}
+  .body{padding:26px 38px 38px}
+  .hero{display:flex;gap:24px;align-items:center;border:1px solid #e3e8ee;border-radius:14px;
+        padding:18px 22px;margin-bottom:20px;background:#fbfcfd}
+  .hero-txt h2{font-size:1.05rem;margin-bottom:3px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px}
+  .stat{border:1px solid #e3e8ee;border-radius:12px;padding:14px;text-align:center;background:#fff}
+  .stat b{display:block;font-size:1.5rem;font-weight:800;color:#ff5a5f;line-height:1.2}
+  .stat span{font-size:.74rem;color:#5a6b7b}
+  h3.sec{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#5a6b7b;
+         margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid #e3e8ee}
+  .file-block{border:1px solid #e3e8ee;border-radius:14px;padding:18px 20px;margin-bottom:16px;page-break-inside:avoid}
+  .fb-head{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  .fb-num{background:#ff5a5f;color:#fff;width:28px;height:28px;border-radius:50%;flex:none;
+          display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem}
+  .fb-name{font-weight:700;font-size:1rem;word-break:break-all}
+  .metrics{display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin:12px 0}
+  .m-lab{display:block;font-size:.72rem;color:#5a6b7b}
+  .m-val{font-size:1.15rem;font-weight:800;color:#1d2b3a}
+  .kbadge{display:inline-block;font-size:.78rem;font-weight:700;padding:4px 12px;border-radius:999px}
+  .kdet{font-size:.78rem;color:#5a6b7b;margin:2px 0 0 2px}
+  .sha{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.7rem;background:#f5f7fa;
+       border:1px solid #e9edf2;border-radius:8px;padding:7px 10px;margin-top:7px;word-break:break-all;color:#33465a}
+  .sha-lab{display:block;font-family:inherit;font-size:.68rem;color:#8a99a8;margin-bottom:2px;
+           font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+  .hoja{margin-top:16px}
+  .hoja-t{font-weight:700;font-size:.88rem;margin-bottom:7px}
+  table{width:100%;border-collapse:collapse;font-size:.8rem}
+  th{background:#f5f7fa;text-align:left;padding:7px 10px;font-size:.72rem;text-transform:uppercase;
+     letter-spacing:.04em;color:#5a6b7b;border:1px solid #e3e8ee}
+  td{padding:7px 10px;border:1px solid #e9edf2;vertical-align:top}
+  .tag{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .tag.art9{background:#fee2e2;color:#dc2626}
+  .tag.modo{background:#eef1f5;color:#33465a}
+  .chip{display:inline-block;font-size:.75rem;font-weight:600;padding:4px 11px;border-radius:999px;margin:0 6px 6px 0}
+  .chip.on{background:#dcfce7;color:#16a34a}
+  .chip.off{background:#f1f3f6;color:#8a99a8}
+  .muted{color:#5a6b7b;font-weight:400}
+  .sm{font-size:.78rem}
+  .legal a{display:block;color:#1d2b3a;text-decoration:none;border:1px solid #e3e8ee;border-radius:10px;
+           padding:9px 13px;margin-bottom:7px;font-size:.8rem}
+  .legal a strong{color:#ff5a5f}
+  .note{background:#fef3c7;border:1px solid #b45309;color:#7c4a06;border-radius:10px;
+        padding:12px 15px;font-size:.78rem;margin-top:18px}
+  footer{border-top:1px solid #e3e8ee;margin-top:26px;padding-top:16px;text-align:center;
+         font-size:.76rem;color:#5a6b7b}
+  footer .author span{color:#ff5a5f;font-weight:600}
+  .toolbar{max-width:900px;margin:0 auto 14px;display:flex;gap:10px;justify-content:flex-end}
+  .btn{background:#ff5a5f;color:#fff;border:none;border-radius:10px;padding:10px 18px;
+       font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn:hover{background:#e63946}
+  @media print{
+    body{background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .page{box-shadow:none;border-radius:0;max-width:none}
+    .toolbar{display:none}
+    .file-block,.hoja{page-break-inside:avoid}
+  }
+  @page{margin:14mm}
+</style></head><body>
+<div class="toolbar"><button class="btn" onclick="window.print()">🖨 Imprimir / Guardar como PDF</button></div>
+<div class="page">
+  <header>
+    <h1>Informe de Anonimización</h1>
+    <div class="subtitle">Evidencia de medida técnica · RGPD (UE) 2016/679 · LOPDGDD 3/2018<br>${fechaLarga}</div>
+  </header>
+  <div class="body">
+
+    <div class="hero">
+      ${anilloSVG(cobertura, colorCob)}
+      <div class="hero-txt">
+        <h2>Cobertura de protección</h2>
+        <div class="muted sm">${protTot} de ${sensTot} columnas sensibles detectadas han sido tratadas.</div>
+        <div class="muted sm" style="margin-top:6px">k-anonimato mínimo del lote: <strong style="color:${kColor}">${kTxt}</strong></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>${infos.length}</b><span>archivos procesados</span></div>
+      <div class="stat"><b>${totalCeldas}</b><span>celdas sustituidas</span></div>
+      <div class="stat"><b>${totalFree}</b><span>PII en texto libre</span></div>
+      <div class="stat"><b style="color:${kColor}">${kTxt}</b><span>k-anonimato mínimo</span></div>
+    </div>
+
+    <h3 class="sec">Detalle por archivo</h3>
+    ${bloques}
+
+    <h3 class="sec">Opciones aplicadas</h3>
+    <div>${chipsOpts}</div>
+    <div class="sm muted" style="margin-top:8px">Claves hash: <strong>${STATE.userSalt ? "sal personalizada (determinista entre sesiones)" : "sal aleatoria de sesión (irrecuperable al cerrar)"}</strong>.
+    Granularidad: fechas <strong>${STATE.granularity.date}</strong> · CP <strong>${STATE.granularity.cp}</strong> · edad <strong>${STATE.granularity.age}</strong>.</div>
+
+    <h3 class="sec">Verificación de integridad</h3>
+    <div class="sm">✅ Se ha comprobado celda a celda que <strong>ninguna columna no seleccionada</strong> fue alterada durante el proceso. Superada en todos los archivos.</div>
+
+    <h3 class="sec">Marco normativo de referencia</h3>
+    <div class="legal">
+      <a href="https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX%3A32016R0679" target="_blank" rel="noopener"><strong>RGPD (UE) 2016/679</strong> — arts. 4.5, 5, 6, 9, 24, 25, 32</a>
+      <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2018-16673" target="_blank" rel="noopener"><strong>LOPDGDD — Ley Orgánica 3/2018</strong></a>
+      <a href="https://www.aepd.es/guias/orientaciones-garantias-procedimientos-anonimizacion.pdf" target="_blank" rel="noopener"><strong>AEPD</strong> — Orientaciones y garantías en los procedimientos de anonimización (2016)</a>
+      <a href="https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp216_en.pdf" target="_blank" rel="noopener"><strong>EDPB/WP29</strong> — Opinion 05/2014 on Anonymisation Techniques</a>
+    </div>
+
+    <div class="note">⚠️ Este informe acredita las <strong>medidas técnicas</strong> aplicadas. La determinación de la base jurídica (art. 6), la valoración del riesgo residual (art. 24) y la eventual necesidad de una evaluación de impacto (art. 35) corresponden al responsable del tratamiento. El k-anonimato se calcula sobre los cuasi-identificadores reconocidos automáticamente; otros atributos podrían reducir el k efectivo.</div>
+
+    <footer>
+      <div>Procesamiento 100% local en el navegador · ExcelJS · Sin conexiones a servidores externos</div>
+      <div class="author" style="margin-top:5px">Aplicación creada y diseñada por <span>Carlos J. Galán Doval</span> · 2026</div>
+    </footer>
+  </div>
+</div>
+</body></html>`;
+}
+
+/* ==========================================================================
+   EVENTOS MENORES, CONFIGURACIÓN Y EXPORTACIÓN
+   ========================================================================== */
+$("exportConfigBtn").onclick = async () => {
+  if(!STATE.files.length) return;
+  const cfg = STATE.files[0].sheets.map(sh=>sh.cols.map(c=>({header: c.header, on:c.on, mode:c.mode}))); 
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], {type:"application/json"});
+  downloadBlob(blob, "anon_config_" + new Date().toISOString().slice(0,10) + ".json");
+};
+
+$("importConfigBtn").onclick = () => $("importConfigFile").click();
+$("importConfigFile").onchange = (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const cfg = JSON.parse(evt.target.result);
+      if(!Array.isArray(cfg)) throw new Error("Formato inválido");
+      // Mapear por nombre de cabecera
+      STATE.files.forEach(file => {
+        file.sheets.forEach((sh, i) => {
+          if(cfg[i]) {
+            sh.cols.forEach(c => {
+              const match = cfg[i].find(xc => xc.header === c.header);
+              if(match) { c.on = match.on; c.mode = match.mode; }
+            });
+          }
+        });
+      });
+      renderConfigUI();
+      alert("✅ Configuración importada correctamente.");
+    } catch(err) {
+      alert("❌ Error al importar configuración: JSON inválido.");
+    }
+  };
+  reader.readAsText(f);
+};
+
+$("dlLog").onclick = () => { if(STATE.logBlob) downloadBlob(STATE.logBlob, STATE.logName); };
+
+// Informe de cumplimiento HTML: ver en pestaña nueva (con botón de impresión) o descargar
+$("viewHtml").onclick = () => {
+  if(!STATE.htmlBlob) { alert("El informe aún no está disponible."); return; }
+  const url = URL.createObjectURL(STATE.htmlBlob);
+  const w = window.open(url, "_blank");
+  if(!w) { downloadBlob(STATE.htmlBlob, "Informe_de_Anonimizacion.html"); }
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);   // margen para que la pestaña cargue
+};
+$("dlHtml").onclick = () => {
+  if(STATE.htmlBlob) downloadBlob(STATE.htmlBlob, "Informe_de_Anonimizacion_" + new Date().toISOString().slice(0,10) + ".html");
+};
+
+function resetApp() { 
+  STATE.files = []; STATE.outputs = []; STATE.coherenceMaps = {}; STATE.logBlob = null; STATE.piiFindings = []; STATE.avisosCarga = [];
+  STATE.perfilActivo = null; STATE.htmlBlob = null;
+  $("file").value = ""; $("importConfigFile").value = "";
+  $("step3").classList.add("hidden"); $("step2").classList.add("hidden"); $("step1").classList.remove("hidden"); 
+}
+$("reset").onclick = resetApp;
+$("reset2").onclick = resetApp;
+$("addMoreFiles").onclick = () => $("file").click();
+
+window.onload = async () => {
+  await initSalt();
+  const savedTheme = localStorage.getItem("anon_theme"); 
+  if(savedTheme==="dark") document.documentElement.setAttribute("data-theme","dark");
+  
+  $("themeTog").onclick = () => { 
+    const cur = document.documentElement.getAttribute("data-theme")==="dark"?"":"dark"; 
+    if(cur) document.documentElement.setAttribute("data-theme",cur); 
+    else document.documentElement.removeAttribute("data-theme"); 
+    localStorage.setItem("anon_theme", cur||"light"); 
+  };
+  
+  // Drag & Drop
+  const drop = $("drop");
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); handleFiles(e.dataTransfer.files); };
+  drop.onclick = () => $("file").click();
+  $("file").onchange = e => handleFiles(e.target.files);
+  
+  // Live Preview Update
+  ["redactGranularity", "dateGranularity", "cpGranularity", "ageGranularity"].forEach(id => {
+    $(id).addEventListener("change", () => {
+      STATE.granularity.redact = $("redactGranularity").value;
+      STATE.granularity.date = $("dateGranularity").value;
+      STATE.granularity.cp = $("cpGranularity").value;
+      STATE.granularity.age = $("ageGranularity").value;
+      if(!$("prevCard").classList.contains("hidden")) $("prevBtn").click();
+    });
+  });
+  $("sheetsBody").addEventListener("change", () => {
+    if(!$("prevCard").classList.contains("hidden")) setTimeout(() => $("prevBtn").click(), 50);
+  });
+
+  // Legal
+  $("acept").onchange = e => $("acceptBtn").disabled = !e.target.checked;
+  $("acceptBtn").onclick = () => { $("step0").classList.add("hidden"); $("step1").classList.remove("hidden"); };
+  
+  // Modal de ayuda
+  const helpOverlay = $("helpOverlay");
+  $("helpBtn").onclick = () => helpOverlay.classList.add("open");
+  $("helpClose").onclick = () => helpOverlay.classList.remove("open");
+  helpOverlay.onclick = e => { if(e.target===helpOverlay) helpOverlay.classList.remove("open"); };
+  
+  document.querySelectorAll(".modal-tab").forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll(".modal-tab").forEach(t=>t.classList.remove("active"));
+      document.querySelectorAll(".modal-section").forEach(s=>s.classList.remove("active"));
+      b.classList.add("active");
+      $("tab-"+b.dataset.tab).classList.add("active");
+    };
+  });
+};
+</script>
+</body>
+</html>
