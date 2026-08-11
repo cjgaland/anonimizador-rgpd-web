@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anonimizador de Datos — v11 (RGPD/LOPDGDD)</title>
+<title>Anonimizador de Datos — v12 (RGPD/LOPDGDD)</title>
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -324,18 +324,49 @@
   .pv-empty { color: var(--slate); font-style: italic; }
   table.prev td.changed { background: rgba(255, 90, 95, .09); max-width: 320px; }
 
+  /* ── Capa de arrastre a pantalla completa (v12) ── */
+  .drop-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(255, 90, 95, .10);
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .16s;
+  }
+  .drop-overlay.show { opacity: 1; }
+  .drop-overlay .dz {
+    background: var(--card); border: 3px dashed var(--coral); border-radius: 20px;
+    padding: 34px 46px; text-align: center; box-shadow: 0 20px 56px rgba(0,0,0,.22);
+  }
+  .drop-overlay .dz svg { width: 48px; height: 48px; color: var(--coral); margin-bottom: 10px; }
+  .drop-overlay .dz strong { display: block; font-size: 1.15rem; margin-bottom: 4px; }
+  .drop-overlay .dz span { color: var(--slate); font-size: .88rem; }
+
   /* ── Footer ── */
   .app-footer { text-align: center; margin-top: 12px; padding-bottom: 90px; }
   .app-footer .note { display: block; font-size: .8rem; color: var(--slate); }
   .app-footer .author { font-size: .8rem; color: var(--slate); margin-top: 6px; opacity: .75; }
   .app-footer .author span { color: var(--coral); font-weight: 600; }
 </style>
+<script>
+/* Tema (v12) — se aplica ANTES de pintar nada, para que no haya un parpadeo
+   de tema claro al abrir la app con el sistema en modo oscuro.
+   Prioridad: preferencia guardada por el usuario > tema del sistema. */
+(function(){
+  try {
+    var saved = localStorage.getItem("anon_theme");
+    var dark = (saved === "dark" || saved === "light")
+      ? (saved === "dark")
+      : !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if(dark) document.documentElement.setAttribute("data-theme","dark");
+  } catch(e){ /* localStorage bloqueado: se queda en tema claro */ }
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
   <header>
     <button class="theme-tog" id="themeTog" title="Cambiar tema">🌓</button>
-    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v11 · RGPD</span></div>
+    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v12 · RGPD</span></div>
     <p>Pseudonimización conforme al RGPD y LOPDGDD · Soporte XLSX, CSV, ODS · Revisión interactiva · 100% local</p>
     <div class="badge">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -351,7 +382,7 @@
     <h2>⚖️ Aviso previo · Marco normativo</h2>
     <p class="sub">Antes de procesar datos personales, lee y acepta lo siguiente.</p>
     <div class="legal">
-      <h3>1. Qué hace esta herramienta (v11)</h3>
+      <h3>1. Qué hace esta herramienta (v12)</h3>
       <p>Realiza una <strong>pseudonimización</strong> (RGPD art. 4.5) o <strong>anonimización</strong> de los datos personales contenidos en hojas de cálculo (<code>.xlsx</code>, <code>.csv</code>, <code>.ods</code>), permitiendo procesamiento por lotes. El archivo resultante se entrega siempre en formato <code>.xlsx</code>. Los datos se sustituyen según el modo elegido por el usuario para cada columna:</p>
       <ul>
         <li><strong>Datos ficticios verosímiles</strong> — preserva utilidad analítica.</li>
@@ -575,6 +606,20 @@
 <!-- ══════════════════════════════════════════════════════════════
      MODAL DE AYUDA Y MARCO LEGAL
      ══════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════════════════════
+     CAPA DE ARRASTRE A PANTALLA COMPLETA (v12)
+     Permite soltar el archivo en cualquier punto de la ventana, no solo
+     dentro del recuadro. Evita además que el navegador abra el archivo
+     y saque al usuario de la aplicación si falla la puntería.
+     ══════════════════════════════════════════════════════════════ -->
+<div class="drop-overlay" id="dropOverlay">
+  <div class="dz">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <strong>Suelta aquí tus archivos</strong>
+    <span>.xlsx · .csv · .ods — en cualquier parte de la ventana</span>
+  </div>
+</div>
+
 <div class="modal-overlay" id="helpOverlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
 
@@ -2326,22 +2371,59 @@ $("addMoreFiles").onclick = () => $("file").click();
 
 window.onload = async () => {
   await initSalt();
-  const savedTheme = localStorage.getItem("anon_theme"); 
-  if(savedTheme==="dark") document.documentElement.setAttribute("data-theme","dark");
-  
-  $("themeTog").onclick = () => { 
-    const cur = document.documentElement.getAttribute("data-theme")==="dark"?"":"dark"; 
-    if(cur) document.documentElement.setAttribute("data-theme",cur); 
-    else document.documentElement.removeAttribute("data-theme"); 
-    localStorage.setItem("anon_theme", cur||"light"); 
+  // ── Tema (v12) ── El tema inicial ya se aplicó en el <head> (sin parpadeo).
+  // Aquí solo se conecta el botón y el seguimiento de los cambios del sistema.
+  const sysDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+  const aplicarTema = dark => {
+    if(dark) document.documentElement.setAttribute("data-theme","dark");
+    else document.documentElement.removeAttribute("data-theme");
   };
-  
-  // Drag & Drop
-  const drop = $("drop");
-  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
-  drop.ondragleave = () => drop.classList.remove("over");
-  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); handleFiles(e.dataTransfer.files); };
-  drop.onclick = () => $("file").click();
+
+  // Mientras no haya preferencia propia guardada, seguir los cambios del sistema
+  if(sysDark && sysDark.addEventListener){
+    sysDark.addEventListener("change", e => {
+      if(!localStorage.getItem("anon_theme")) aplicarTema(e.matches);
+    });
+  }
+
+  $("themeTog").onclick = () => {
+    const dark = document.documentElement.getAttribute("data-theme") !== "dark";
+    aplicarTema(dark);
+    localStorage.setItem("anon_theme", dark ? "dark" : "light");
+  };
+
+  // ── Arrastrar y soltar (v12): en CUALQUIER parte de la ventana ──
+  // El recuadro sigue siendo clicable, pero el archivo se puede soltar donde
+  // sea. Se cancela el comportamiento por defecto del navegador (abrir el
+  // archivo y sacar al usuario de la app) aunque se falle la puntería.
+  const dropOv = $("dropOverlay");
+  let dragDepth = 0;
+  const llevaArchivos = e => {
+    const t = e.dataTransfer && e.dataTransfer.types;
+    return !!t && Array.prototype.indexOf.call(t, "Files") !== -1;
+  };
+
+  document.addEventListener("dragenter", e => {
+    if(!llevaArchivos(e)) return;
+    e.preventDefault(); dragDepth++; dropOv.classList.add("show");
+  });
+  document.addEventListener("dragover", e => {
+    if(!llevaArchivos(e)) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+  });
+  document.addEventListener("dragleave", e => {
+    if(!llevaArchivos(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if(dragDepth === 0) dropOv.classList.remove("show");
+  });
+  document.addEventListener("drop", e => {
+    if(!llevaArchivos(e)) return;
+    e.preventDefault();
+    dragDepth = 0; dropOv.classList.remove("show");
+    if(e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+
+  $("drop").onclick = () => $("file").click();
   $("file").onchange = e => handleFiles(e.target.files);
   
   // Live Preview Update
