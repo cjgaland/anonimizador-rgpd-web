@@ -2,8 +2,14 @@
 
 **👉 Usar la aplicación: https://cjgaland.github.io/anonimizador-rgpd-web/**
 
-Herramienta gratuita para pseudonimizar y anonimizar datos personales en
-hojas de cálculo (`.xlsx`, `.csv`, `.ods`), conforme al RGPD y la LOPDGDD.
+Herramientas gratuitas para pseudonimizar y anonimizar datos personales,
+conforme al RGPD y la LOPDGDD:
+
+- **Hojas de cálculo** (`.xlsx`, `.csv`, `.ods`): https://cjgaland.github.io/anonimizador-rgpd-web/
+- **PDF** (texto digital y escaneados con OCR): https://cjgaland.github.io/anonimizador-rgpd-web/pdf.html
+- **Word** (`.docx`): https://cjgaland.github.io/anonimizador-rgpd-web/word.html
+
+Lo que sigue describe la herramienta de hojas de cálculo.
 
 ## ¿Qué hace?
 
