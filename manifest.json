@@ -1,7 +1,7 @@
 {
   "name": "Anonimizador de Datos — RGPD/LOPDGDD",
   "short_name": "Anonimizador",
-  "description": "Pseudonimización y anonimización de hojas de cálculo conforme al RGPD y LOPDGDD. 100% local, sin servidor.",
+  "description": "Anonimización de tablas de datos (Excel, CSV, ODS), PDF y Word conforme al RGPD y LOPDGDD. 100% local, sin servidor.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f7fa",
