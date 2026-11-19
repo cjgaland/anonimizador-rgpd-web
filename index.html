@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anonimizador de Datos — v12 (RGPD/LOPDGDD)</title>
+<title>Anonimizador de Datos — v13 (RGPD/LOPDGDD)</title>
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -341,6 +341,83 @@
   .drop-overlay .dz strong { display: block; font-size: 1.15rem; margin-bottom: 4px; }
   .drop-overlay .dz span { color: var(--slate); font-size: .88rem; }
 
+  /* ── Comprobar integridad (v13) ── */
+  .int-btn {
+    display: inline-flex; align-items: center; gap: 6px; margin: 12px 0 0 8px; background: var(--card);
+    border: 1px solid var(--coral); color: var(--coral); font-family: inherit; font-size: .78rem; font-weight: 700;
+    padding: 4px 13px; border-radius: 999px; cursor: pointer; transition: .15s; vertical-align: top;
+  }
+  .int-btn:hover { background: var(--coral); color: #fff; }
+  .int-modal { max-width: 1120px; }
+  .int-body { overflow-y: auto; padding: 16px 22px 20px; flex: 1; }
+  .int-intro { font-size: .85rem; color: var(--slate); margin-bottom: 12px; }
+  .int-mode { display: inline-flex; flex-wrap: wrap; background: rgba(127,127,127,.1); border-radius: 11px; padding: 3px; gap: 3px; margin-bottom: 14px; }
+  .int-mode-b { border: none; background: transparent; color: var(--slate); font-family: inherit; font-size: .84rem; font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+  .int-mode-b.active { background: var(--card); color: var(--coral); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .int-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width: 760px) { .int-grid { grid-template-columns: 1fr; } }
+  .int-col { min-width: 0; }
+  .int-step { font-weight: 700; font-size: .9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .int-n { background: var(--coral); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; flex: none; }
+  .int-drop { padding: 16px 14px; }
+  .int-drop svg { width: 28px; height: 28px; margin-bottom: 4px; }
+  .int-drop strong { font-size: .95rem; word-break: break-all; }
+  .int-info { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .8rem; }
+  .int-meta { color: var(--slate); font-size: .76rem; margin-bottom: 4px; }
+  .int-hash {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; background: rgba(127,127,127,.08);
+    border-radius: 8px; padding: 7px 9px; word-break: break-all; display: flex; gap: 8px; align-items: flex-start; margin-top: 6px;
+  }
+  .int-hash .val { flex: 1; min-width: 0; }
+  .int-diff .lab { display: inline-block !important; min-width: 120px; margin-right: 6px; }
+  .int-hash .lab, .int-diff .lab {
+    display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: .64rem;
+    font-weight: 700; color: var(--slate); letter-spacing: .04em; text-transform: uppercase;
+  }
+  .int-otras { margin: 6px 0 0; }
+  .int-otras summary { font-size: .76rem; }
+  .int-otras-c { font-size: .76rem; color: var(--slate); }
+  .btn-mini {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink); font-family: inherit; font-size: .74rem;
+    font-weight: 600; padding: 4px 10px; border-radius: 8px; cursor: pointer; flex: none;
+  }
+  .btn-mini:hover { border-color: var(--coral); color: var(--coral); }
+  #intRefHuella { border-radius: 12px; transition: .15s; }
+  #intRefHuella.over { background: rgba(255, 90, 95, .06); box-shadow: 0 0 0 2px var(--coral); }
+  #intRef {
+    width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; background: var(--card); color: var(--ink);
+  }
+  #intRef:focus { outline: none; border-color: var(--coral); }
+  .int-reffile { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .int-muted { font-size: .76rem; color: var(--slate); }
+  .int-det { font-size: .78rem; margin-top: 8px; padding: 7px 10px; border-radius: 9px; display: none; }
+  .int-det.ok { display: block; background: var(--okbg); color: var(--ok); }
+  .int-det.warn { display: block; background: var(--warnbg); color: var(--warn); }
+  .int-extra { margin-top: 12px; }
+  .int-extra label { display: block; font-size: .76rem; font-weight: 700; color: var(--slate); margin: 8px 0 4px; }
+  .int-extra input { width: 100%; }
+  .int-verdict { margin-top: 16px; border-radius: 14px; padding: 14px 18px; display: flex; gap: 14px; align-items: flex-start; border: 1px solid transparent; }
+  .int-verdict .vi { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 800; }
+  .int-verdict .vb { flex: 1; min-width: 0; }
+  .int-verdict .vt { font-weight: 800; font-size: 1.05rem; letter-spacing: .02em; }
+  .int-verdict .vs { font-size: .83rem; color: var(--ink); }
+  .int-verdict.wait { background: rgba(127,127,127,.07); color: var(--slate); }
+  .int-verdict.wait .vi { background: rgba(127,127,127,.16); }
+  .int-verdict.wait .vs { color: var(--slate); }
+  .int-verdict.ok { background: var(--okbg); color: var(--ok); border-color: var(--ok); }
+  .int-verdict.ok .vi { background: var(--ok); color: #fff; }
+  .int-verdict.err { background: var(--dangerbg); color: var(--danger); border-color: var(--danger); }
+  .int-verdict.err .vi { background: var(--danger); color: #fff; }
+  .int-verdict.warn { background: var(--warnbg); color: var(--warn); border-color: var(--warn); }
+  .int-verdict.warn .vi { background: var(--warn); color: #fff; }
+  .int-diff { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; margin-top: 8px; word-break: break-all; color: var(--ink); }
+  .int-diff mark { background: var(--danger); color: #fff; font-weight: 700; padding: 0; border-radius: 2px; }
+  .int-actions { margin-top: 14px; }
+  .int-actions .btn { padding: 11px; font-size: .9rem; }
+  @media(max-width: 600px) { .int-actions { flex-direction: column; } .int-body { padding: 14px; } }
+  @media(max-height: 760px) { .int-intro { display: none; } .int-drop { padding: 10px; } .int-drop svg { display: none; } #intRef { min-height: 70px; } .int-verdict { margin-top: 10px; padding: 10px 14px; } }
+
   /* ── Footer ── */
   .app-footer { text-align: center; margin-top: 12px; padding-bottom: 90px; }
   .app-footer .note { display: block; font-size: .8rem; color: var(--slate); }
@@ -366,12 +443,13 @@
 <div class="wrap">
   <header>
     <button class="theme-tog" id="themeTog" title="Cambiar tema">🌓</button>
-    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v12 · RGPD</span></div>
-    <p>Pseudonimización conforme al RGPD y LOPDGDD · Soporte XLSX, CSV, ODS · Revisión interactiva · 100% local</p>
+    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v13 · RGPD</span></div>
+    <p>Pseudonimización conforme al RGPD y LOPDGDD · Soporte XLSX, CSV, ODS · Revisión interactiva · Comprobación de integridad · 100% local</p>
     <div class="badge">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Procesamiento 100% local en tu navegador · Sin cookies · Sin trazas
     </div>
+    <button class="int-btn" id="intOpen" title="Comprobar que un fichero es idéntico al original mediante su huella digital">🔐 Comprobar integridad</button>
   </header>
 
   <!-- BOTÓN AYUDA FLOTANTE -->
@@ -382,7 +460,7 @@
     <h2>⚖️ Aviso previo · Marco normativo</h2>
     <p class="sub">Antes de procesar datos personales, lee y acepta lo siguiente.</p>
     <div class="legal">
-      <h3>1. Qué hace esta herramienta (v12)</h3>
+      <h3>1. Qué hace esta herramienta (v13)</h3>
       <p>Realiza una <strong>pseudonimización</strong> (RGPD art. 4.5) o <strong>anonimización</strong> de los datos personales contenidos en hojas de cálculo (<code>.xlsx</code>, <code>.csv</code>, <code>.ods</code>), permitiendo procesamiento por lotes. El archivo resultante se entrega siempre en formato <code>.xlsx</code>. Los datos se sustituyen según el modo elegido por el usuario para cada columna:</p>
       <ul>
         <li><strong>Datos ficticios verosímiles</strong> — preserva utilidad analítica.</li>
@@ -394,6 +472,8 @@
       </ul>
       <p>Además, incluye <strong>detección de PII en texto libre</strong> para evitar fugas de información en columnas como "Observaciones", con un modal interactivo para su revisión previa: cada hallazgo se aprueba o rechaza individualmente y el valor propuesto que se muestra es <strong>exactamente</strong> el que se escribirá en la celda.</p>
       
+      <p>Incluye también, en el botón <strong>🔐 Comprobar integridad</strong> de la cabecera, una herramienta para confirmar mediante su huella digital (SHA-256 u otras) que un fichero recibido es idéntico al original, con informe de verificación imprimible.</p>
+
       <h3>2. Base jurídica del uso</h3>
       <p>La pseudonimización por sí sola <strong>no exime</strong> al responsable del tratamiento de identificar una base jurídica válida (RGPD art. 6) ni de aplicar el resto de principios (art. 5). Esta herramienta es una <strong>medida técnica y organizativa</strong> en el sentido de los arts. 25 y 32 RGPD.</p>
       <h3>3. Datos de categoría especial (art. 9 RGPD)</h3>
@@ -620,6 +700,82 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════
+     COMPROBAR INTEGRIDAD (v13)
+     Huella digital de cualquier fichero frente a una huella de
+     referencia o frente al fichero original. Informe imprimible.
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="intOverlay">
+  <div class="modal int-modal" role="dialog" aria-modal="true" aria-labelledby="intTitle">
+    <div class="modal-head">
+      <span style="font-size:1.4rem">🔐</span>
+      <h2 id="intTitle">Comprobar la integridad de un fichero</h2>
+      <button class="modal-close" id="intClose" title="Cerrar">✕</button>
+    </div>
+    <div class="int-body">
+      <p class="int-intro">Comprueba que un fichero que te han entregado es <strong>exactamente</strong> el original: la app calcula su huella digital y la compara con la de referencia. Sirve para cualquier tipo de archivo y todo ocurre en tu equipo; el fichero no se envía a ningún sitio.</p>
+
+      <div class="int-mode" role="tablist">
+        <button class="int-mode-b active" data-mode="huella">Con la huella que me han dado</button>
+        <button class="int-mode-b" data-mode="fichero">Comparando con el fichero original</button>
+      </div>
+
+      <div class="int-grid">
+        <div class="int-col">
+          <div class="int-step"><span class="int-n">1</span> Fichero a comprobar</div>
+          <div class="drop int-drop" id="intDropA">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            <strong id="intDropATxt">Suelta aquí el fichero a comprobar</strong>
+            <span>o haz clic para elegirlo · cualquier tipo de archivo</span>
+          </div>
+          <input type="file" id="intFileA">
+          <div class="int-info hidden" id="intInfoA"></div>
+        </div>
+
+        <div class="int-col">
+          <div id="intRefHuella">
+            <div class="int-step"><span class="int-n">2</span> Huella de referencia</div>
+            <textarea id="intRef" spellcheck="false" placeholder="Pega aquí la huella tal como te la hayan enviado. Vale con espacios, en mayúsculas o con la etiqueta «SHA-256:». También puedes soltar aquí el .txt o el informe que acompaña al fichero."></textarea>
+            <div class="int-reffile">
+              <button class="btn-mini" id="intRefFileBtn">📄 Sacarla de un archivo (.txt, informe…)</button>
+              <input type="file" id="intRefFile" accept=".txt,.sha256,.sha1,.sha512,.md5,.sum,.sfv,.html,.htm,.json,.xml,text/*">
+              <span class="int-muted" id="intRefSrc"></span>
+            </div>
+            <div class="int-det" id="intRefDet"></div>
+          </div>
+
+          <div id="intRefFichero" class="hidden">
+            <div class="int-step"><span class="int-n">2</span> Fichero original</div>
+            <div class="drop int-drop" id="intDropB">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+              <strong id="intDropBTxt">Suelta aquí el fichero original</strong>
+              <span>o haz clic para elegirlo</span>
+            </div>
+            <input type="file" id="intFileB">
+            <div class="int-info hidden" id="intInfoB"></div>
+          </div>
+
+          <details class="int-extra">
+            <summary>Datos para el informe (opcional)</summary>
+            <label for="intWho">Verificado por</label>
+            <input type="text" class="small-input" id="intWho" placeholder="Nombre y/o servicio">
+            <label for="intNote">Procedencia u observaciones</label>
+            <input type="text" class="small-input" id="intNote" placeholder="p. ej. «Recibido por correo del Servicio de Admisión»">
+          </details>
+        </div>
+      </div>
+
+      <div class="int-verdict wait" id="intVerdict"></div>
+
+      <div class="btn-row int-actions">
+        <button class="btn btn-primary" id="intReport" disabled title="Abre el informe en una pestaña nueva, listo para imprimir o guardar como PDF">📄 Ver informe (imprimible a PDF)</button>
+        <button class="btn btn-ghost" id="intReportDl" disabled>⬇ Descargar informe (.html)</button>
+        <button class="btn btn-ghost" id="intReset">Limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="helpOverlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
 
@@ -635,6 +791,7 @@
       <button class="modal-tab" data-tab="modos">🎛 Modos por columna</button>
       <button class="modal-tab" data-tab="globales">⚙️ Opciones globales</button>
       <button class="modal-tab" data-tab="flujo">🗂 Flujo de trabajo</button>
+      <button class="modal-tab" data-tab="integridad">🔐 Integridad</button>
       <button class="modal-tab" data-tab="legal">⚖️ Marco Legal</button>
     </div>
 
@@ -926,6 +1083,19 @@
         <div class="help-note" style="margin-top:14px; background-color: #f0fdf4; border-color: #bbf7d0; color: #166534;">
           💎 <strong>Garantía de Integridad Estructural y Visual:</strong> Al anonimizar, la herramienta modifica exclusivamente las celdas de las columnas seleccionadas. <strong>Todo lo demás permanece 100% inalterado:</strong> el número total de filas y columnas, las hojas de cálculo, y la apariencia original (anchos, altos, colores, fuentes, fórmulas y bordes). El archivo generado será un clon visual exacto del original, pero con los datos sensibles neutralizados.
         </div>
+      </div>
+
+      <!-- TAB: INTEGRIDAD (v13) -->
+      <div class="modal-section" id="tab-integridad">
+        <p style="font-size:.88rem;color:var(--slate);margin-bottom:20px">El botón <strong>🔐 Comprobar integridad</strong> de la cabecera abre una herramienta independiente para confirmar que un fichero que te han entregado es exactamente el original. No hace falta aceptar el aviso legal ni anonimizar nada antes.</p>
+        <div class="help-grid">
+          <div class="help-card highlight"><div class="hc-icon">🔑</div><div class="hc-title">¿Qué es una huella?</div><div class="hc-desc">Es un resumen matemático del contenido del fichero (función hash). Si cambia un solo byte, la huella cambia por completo. Si dos huellas coinciden, el contenido es idéntico. El nombre y la fecha del archivo no cuentan.</div><span class="hc-ex">SHA-256 → 64 caracteres 0-9 a-f</span></div>
+          <div class="help-card"><div class="hc-icon">📋</div><div class="hc-title">Con la huella que me han dado</div><div class="hc-desc">Carga el fichero y pega su huella como venga (con espacios, en mayúsculas, con la etiqueta «SHA-256:»…). También puedes soltar el .txt o el informe que lo acompaña: la app encuentra la huella dentro.</div></div>
+          <div class="help-card"><div class="hc-icon">🗂</div><div class="hc-title">Comparando con el fichero original</div><div class="hc-desc">Si tienes las dos copias (la original y la que te han entregado), cárgalas y la app te dice si son idénticas byte a byte, sin necesidad de ninguna huella.</div></div>
+          <div class="help-card"><div class="hc-icon">📄</div><div class="hc-title">Informe de verificación</div><div class="hc-desc">Con el veredicto, genera un informe con el fichero, su tamaño, las dos huellas, la fecha y la hora, quién verifica y cómo repetir la comprobación. Se imprime o se guarda como PDF.</div></div>
+        </div>
+        <div class="help-note">🧮 Reconoce huellas <strong>MD5, SHA-1, SHA-256, SHA-384 y SHA-512</strong> por su longitud, también en Base64. MD5 y SHA-1 son algoritmos antiguos: sirven para descartar errores de copia o de envío, pero no garantizan frente a una manipulación deliberada. Si puedes elegir, pide SHA-256.</div>
+        <div class="help-note">💡 Para comprobar un archivo anonimizado con esta app, usa la «SHA-256 salida» del informe de anonimización: puedes soltar el propio informe en la casilla de la huella.</div>
       </div>
 
       <!-- TAB: MARCO LEGAL -->
@@ -2405,6 +2575,7 @@ window.onload = async () => {
 
   document.addEventListener("dragenter", e => {
     if(!llevaArchivos(e)) return;
+    if(intAbierta()) { e.preventDefault(); return; }   // v13: la ventana de integridad tiene sus propias zonas
     e.preventDefault(); dragDepth++; dropOv.classList.add("show");
   });
   document.addEventListener("dragover", e => {
@@ -2420,6 +2591,7 @@ window.onload = async () => {
     if(!llevaArchivos(e)) return;
     e.preventDefault();
     dragDepth = 0; dropOv.classList.remove("show");
+    if(intAbierta()) { intSoltarGlobal(e.dataTransfer.files); return; }   // v13
     if(e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
 
@@ -2459,6 +2631,534 @@ window.onload = async () => {
     };
   });
 };
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   COMPROBAR INTEGRIDAD (v13)
+   Calcula la huella digital (hash) de cualquier fichero y la compara con
+   una huella de referencia o con la de otro fichero (el original).
+   Genera un informe de verificación imprimible. Todo ocurre en el
+   navegador: el fichero nunca sale del equipo.
+   ══════════════════════════════════════════════════════════════════════ */
+const INT_ALGS = { 32: "MD5", 40: "SHA-1", 64: "SHA-256", 96: "SHA-384", 128: "SHA-512" };
+const INT_DEBILES = { "MD5": true, "SHA-1": true };
+const INT = {
+  modo: "huella",                     // "huella" | "fichero"
+  A: null, B: null,                   // { file, buf, hashes:{} }
+  refTexto: "", refOrigen: "manual",  // "manual" | nombre del archivo del que se extrajo
+  resultado: null                     // último veredicto calculado (para el informe)
+};
+
+/* ── MD5 (RFC 1321) — Web Crypto no lo incluye; se implementa aquí ── */
+function intMd5(bytes) {
+  const S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+             4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  const K = new Uint32Array(64);
+  for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296);
+  const len = bytes.length, total = (Math.floor((len + 8) / 64) + 1) * 64;
+  const buf = new Uint8Array(total); buf.set(bytes); buf[len] = 0x80;
+  const dv = new DataView(buf.buffer);
+  dv.setUint32(total - 8, (len * 8) >>> 0, true);
+  dv.setUint32(total - 4, Math.floor(len / 0x20000000) >>> 0, true);
+  let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  const M = new Uint32Array(16);
+  for (let off = 0; off < total; off += 64) {
+    for (let j = 0; j < 16; j++) M[j] = dv.getUint32(off + j * 4, true);
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16)      { F = (B & C) | (~B & D); g = i; }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+      else if (i < 48) { F = B ^ C ^ D;          g = (3 * i + 5) % 16; }
+      else             { F = C ^ (B | ~D);       g = (7 * i) % 16; }
+      F = (F + A + K[i] + M[g]) >>> 0;
+      A = D; D = C; C = B;
+      B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) >>> 0;
+    }
+    a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+  }
+  const out = new DataView(new ArrayBuffer(16));
+  [a0, b0, c0, d0].forEach((v, i) => out.setUint32(i * 4, v, true));
+  return Array.from(new Uint8Array(out.buffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function intHash(slot, alg) {
+  if (!slot) return "";
+  if (slot.hashes[alg]) return slot.hashes[alg];
+  let h;
+  if (alg === "MD5") h = intMd5(new Uint8Array(slot.buf));
+  else {
+    const d = await crypto.subtle.digest(alg, slot.buf);
+    h = Array.from(new Uint8Array(d)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  slot.hashes[alg] = h;
+  return h;
+}
+
+function intTam(n) {
+  if (n < 1024) return n + " bytes";
+  const u = ["KB", "MB", "GB"]; let v = n / 1024, i = 0;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return v.toLocaleString("es-ES", { maximumFractionDigits: 1 }) + " " + u[i] + " (" + n.toLocaleString("es-ES") + " bytes)";
+}
+function intFecha(d) {
+  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }) + " a las " +
+         d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+/* ── Extraer huellas de un texto pegado o de un archivo (txt, informe html…) ──
+   Admite: mayúsculas, etiquetas («SHA-256: …»), formato «huella  nombre» de
+   sha256sum, huellas partidas en grupos (con espacios, guiones o «:») y
+   huellas en Base64. Devuelve [{hex, alg, etiqueta}]. */
+function intExtraerHuellas(texto) {
+  let t = String(texto || "");
+  if (/<(html|body|div|span|p|td|table)[\s>]/i.test(t)) {
+    try {
+      const doc = new DOMParser().parseFromString(t, "text/html");
+      doc.querySelectorAll("script,style").forEach(n => n.remove());
+      t = doc.body ? (doc.body.innerText || doc.body.textContent || "") : t;
+    } catch (e) { /* se usa el texto tal cual */ }
+  }
+  const out = [], vistos = new Set();
+  const etiquetaDe = pos => {
+    const limpia = x => x.replace(/[\s:=\-–—·|]+$/, "").trim();
+    const ini = t.lastIndexOf("\n", pos - 1) + 1;
+    let e = limpia(t.slice(Math.max(ini, pos - 60), pos));
+    if (!e && ini > 0) {                       // etiqueta en la línea anterior («SHA-256 salida» ⏎ huella)
+      const prev = t.slice(0, ini - 1).replace(/\s+$/, "");
+      const linea = limpia(prev.slice(prev.lastIndexOf("\n") + 1));
+      if (linea.length <= 40 && !/[0-9a-f]{32,}/i.test(linea)) e = linea;
+    }
+    return e.length > 40 ? "…" + e.slice(-40) : e;
+  };
+  const anadir = (hex, pos) => {
+    hex = hex.toLowerCase();
+    if (!INT_ALGS[hex.length] || !/[a-f]/.test(hex) || vistos.has(hex)) return;
+    vistos.add(hex); out.push({ hex, alg: INT_ALGS[hex.length], etiqueta: etiquetaDe(pos) });
+  };
+  // Tramos hexadecimales máximos
+  const tramos = []; const re = /[0-9a-fA-F]+/g; let m;
+  while ((m = re.exec(t))) tramos.push({ s: m[0], i: m.index, f: m.index + m[0].length });
+  tramos.forEach(r => anadir(r.s, r.i));
+  // Huellas partidas en grupos («3fa4 5b2c …», «3f:a4:5b …»)
+  if (!out.length) {
+    for (let i = 0; i < tramos.length; i++) {
+      if (tramos[i].s.length < 2) continue;
+      let acum = tramos[i].s, j = i, mejor = null, mejorJ = i;
+      while (j + 1 < tramos.length && /^[ \t:\-\r\n]{1,3}$/.test(t.slice(tramos[j].f, tramos[j + 1].i)) && tramos[j + 1].s.length >= 2) {
+        j++; acum += tramos[j].s;
+        if (INT_ALGS[acum.length]) { mejor = acum; mejorJ = j; }
+        if (acum.length > 128) break;
+      }
+      if (mejor) { anadir(mejor, tramos[i].i); i = mejorJ; }
+    }
+  }
+  // Base64 (p. ej. «47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=»)
+  if (!out.length) {
+    const b64 = { 24: "MD5", 28: "SHA-1", 44: "SHA-256", 64: "SHA-384", 88: "SHA-512" };
+    const rb = /[A-Za-z0-9+/]{20,}={0,2}/g;
+    while ((m = rb.exec(t))) {
+      if (!b64[m[0].length] || !/=$/.test(m[0]) && m[0].length !== 64) continue;
+      try {
+        const bin = atob(m[0]);
+        const hex = Array.from(bin, c => c.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+        anadir(hex, m.index);
+      } catch (e) { /* no era Base64 */ }
+    }
+  }
+  return out;
+}
+
+/* Explica por qué un texto no contiene una huella válida */
+function intDiagnostico(texto) {
+  const tramos = (String(texto).match(/[0-9a-fA-F]+/g) || []).sort((a, b) => b.length - a.length);
+  const largo = tramos.length ? tramos[0].length : 0;
+  if (largo >= 20) {
+    const cerca = Object.keys(INT_ALGS).map(Number).sort((a, b) => Math.abs(a - largo) - Math.abs(b - largo))[0];
+    return `La huella pegada tiene <strong>${largo} caracteres</strong> y una huella ${INT_ALGS[cerca]} tiene <strong>${cerca}</strong>. ` +
+           (largo < cerca ? "Parece que se ha quedado un trozo sin copiar." : "Parece que sobra algún carácter o se han juntado dos huellas.");
+  }
+  return "No encuentro ninguna huella en el texto. Una huella SHA-256 son 64 caracteres con números del 0 al 9 y letras de la «a» a la «f».";
+}
+
+/* ── Pintar la ficha de un fichero cargado ── */
+async function intPintarFicha(slot, idInfo, idTxt) {
+  const f = slot.file;
+  $(idTxt).textContent = f.name;
+  const sha = await intHash(slot, "SHA-256");
+  const box = $(idInfo);
+  box.innerHTML = `
+    <div class="int-meta">${escapeHtml(intTam(f.size))}${f.lastModified ? " · modificado el " + escapeHtml(intFecha(new Date(f.lastModified))) : ""}</div>
+    <div class="int-hash"><div class="val"><span class="lab">Huella SHA-256 calculada</span>${sha}</div>
+      <button class="btn-mini" data-copiar="${sha}">Copiar</button></div>
+    <details class="int-otras"><summary>Ver otras huellas (MD5, SHA-1, SHA-512)</summary><div class="int-otras-c">Calculando…</div></details>`;
+  box.classList.remove("hidden");
+  const det = box.querySelector("details");
+  det.addEventListener("toggle", async () => {
+    if (!det.open || det.dataset.hecho) return;
+    det.dataset.hecho = "1";
+    const filas = [];
+    for (const alg of ["MD5", "SHA-1", "SHA-512"]) {
+      const h = await intHash(slot, alg);
+      filas.push(`<div class="int-hash"><div class="val"><span class="lab">${alg}</span>${h}</div><button class="btn-mini" data-copiar="${h}">Copiar</button></div>`);
+    }
+    det.querySelector(".int-otras-c").innerHTML = filas.join("");
+  });
+}
+
+async function intCargar(cual, file) {
+  if (!file) return;
+  const slot = { file, buf: null, hashes: {} };
+  INT[cual] = slot;
+  const txt = cual === "A" ? "intDropATxt" : "intDropBTxt";
+  $(txt).textContent = "Leyendo " + file.name + "…";
+  intVeredicto({ estado: "wait", icono: "…", titulo: "Calculando la huella…", texto: "Un momento: se está leyendo el fichero en tu equipo." });
+  try {
+    slot.buf = await file.arrayBuffer();
+  } catch (e) {
+    INT[cual] = null; $(txt).textContent = "No se ha podido leer el fichero";
+    intVeredicto({ estado: "warn", icono: "!", titulo: "No se ha podido leer el fichero", texto: "Puede que sea demasiado grande para el navegador o que esté bloqueado por otra aplicación." });
+    return;
+  }
+  if (INT[cual] !== slot) return;           // se cargó otro mientras tanto
+  await intPintarFicha(slot, cual === "A" ? "intInfoA" : "intInfoB", txt);
+  intComprobar();
+}
+
+async function intCargarRefArchivo(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    intVeredicto({ estado: "warn", icono: "!", titulo: "Ese archivo es demasiado grande para ser una huella", texto: "Para sacar la huella de un archivo, usa el .txt o el informe que te enviaron junto al fichero (no el fichero en sí)." });
+    return;
+  }
+  $("intRef").value = await file.text();
+  INT.refOrigen = file.name;
+  $("intRefSrc").textContent = "Extraída de «" + file.name + "»";
+  intComprobar();
+}
+
+/* ── Veredicto ── */
+function intVeredicto(v) {
+  const el = $("intVerdict");
+  el.className = "int-verdict " + v.estado;
+  el.innerHTML = `<div class="vi">${v.icono}</div><div class="vb"><div class="vt">${v.titulo}</div><div class="vs">${v.texto}</div>${v.extra || ""}</div>`;
+  const listo = v.estado === "ok" || v.estado === "err";
+  $("intReport").disabled = !listo; $("intReportDl").disabled = !listo;
+}
+
+function intDiff(esperada, calculada) {
+  let html = "", n = 0;
+  for (let i = 0; i < esperada.length; i++) {
+    const igual = esperada[i] === calculada[i];
+    if (!igual) n++;
+    html += igual ? esperada[i] : `<mark>${esperada[i]}</mark>`;
+  }
+  return { html, n };
+}
+
+let intTurno = 0;
+async function intComprobar() {
+  const turno = ++intTurno;
+  INT.resultado = null;
+  const A = INT.A;
+
+  if (INT.modo === "fichero") {
+    const B = INT.B;
+    if (!A || !B || !A.buf || !B.buf) {
+      intVeredicto({ estado: "wait", icono: "?", titulo: "Faltan datos",
+        texto: !A && !B ? "Carga el fichero que te han entregado y el fichero original." : (!A ? "Ahora carga el fichero que te han entregado (columna 1)." : "Ahora carga el fichero original (columna 2).") });
+      return;
+    }
+    const ha = await intHash(A, "SHA-256"), hb = await intHash(B, "SHA-256");
+    if (turno !== intTurno) return;
+    const ok = ha === hb;
+    INT.resultado = { ok, alg: "SHA-256", calculada: ha, referencia: hb, etiqueta: "", candidatas: 1 };
+    if (ok) intVeredicto({ estado: "ok", icono: "✓", titulo: "INTEGRIDAD CONFIRMADA",
+      texto: "Los dos ficheros son idénticos byte a byte: tienen la misma huella SHA-256." + (A.file.name !== B.file.name ? " (Solo cambia el nombre del archivo, que no forma parte del contenido.)" : "") });
+    else {
+      const d = intDiff(hb, ha);
+      intVeredicto({ estado: "err", icono: "✕", titulo: "INTEGRIDAD NO VÁLIDA",
+        texto: "Los ficheros <strong>no son iguales</strong>: sus huellas no coinciden" +
+               (A.file.size !== B.file.size ? ` y además tienen distinto tamaño (${A.file.size.toLocaleString("es-ES")} frente a ${B.file.size.toLocaleString("es-ES")} bytes).` : ", aunque tengan el mismo tamaño: ha cambiado algún contenido."),
+        extra: `<div class="int-diff"><span class="lab">Original</span>${d.html}<br><span class="lab">Entregado</span>${ha}</div>` });
+    }
+    return;
+  }
+
+  // Modo «huella de referencia»
+  const texto = $("intRef").value;
+  const cands = texto.trim() ? intExtraerHuellas(texto) : [];
+  const det = $("intRefDet");
+  if (!texto.trim()) { det.className = "int-det"; det.innerHTML = ""; }
+  else if (!cands.length) { det.className = "int-det warn"; det.innerHTML = "⚠ " + intDiagnostico(texto); }
+  else {
+    const tipos = {}; cands.forEach(c => tipos[c.alg] = (tipos[c.alg] || 0) + 1);
+    const resumen = Object.keys(tipos).map(k => k + (tipos[k] > 1 ? " ×" + tipos[k] : "")).join(", ");
+    det.className = "int-det ok";
+    det.innerHTML = cands.length === 1
+      ? `✓ Huella ${cands[0].alg} reconocida (${cands[0].hex.length} caracteres)` + (INT_DEBILES[cands[0].alg] ? ` · <em>algoritmo antiguo: detecta errores, pero no garantiza frente a manipulaciones deliberadas</em>` : "")
+      : `✓ He encontrado ${cands.length} huellas en el texto (${resumen}). El fichero se dará por correcto si coincide con alguna.`;
+  }
+
+  if (!A || !A.buf) {
+    intVeredicto({ estado: "wait", icono: "?", titulo: "Falta el fichero",
+      texto: cands.length ? "Carga el fichero que quieres comprobar (columna 1)." : "Carga el fichero que quieres comprobar y pega su huella de referencia." });
+    return;
+  }
+  if (!texto.trim()) {
+    intVeredicto({ estado: "wait", icono: "?", titulo: "Falta la huella de referencia",
+      texto: "Pega la huella que te han enviado con el fichero o sácala del .txt o del informe que lo acompaña (columna 2)." });
+    return;
+  }
+  if (!cands.length) {
+    intVeredicto({ estado: "warn", icono: "!", titulo: "No puedo comprobarlo todavía", texto: intDiagnostico(texto) });
+    return;
+  }
+
+  let coincide = null;
+  for (const c of cands) {
+    const h = await intHash(A, c.alg);
+    if (turno !== intTurno) return;
+    if (h === c.hex) { coincide = c; break; }
+  }
+  const sha = await intHash(A, "SHA-256");
+  if (turno !== intTurno) return;
+
+  if (coincide) {
+    INT.resultado = { ok: true, alg: coincide.alg, calculada: coincide.hex, referencia: coincide.hex, etiqueta: coincide.etiqueta, candidatas: cands.length, sha256: sha };
+    intVeredicto({ estado: "ok", icono: "✓", titulo: "INTEGRIDAD CONFIRMADA",
+      texto: `La huella ${coincide.alg} del fichero coincide con la de referencia${coincide.etiqueta && cands.length > 1 ? " («" + escapeHtml(coincide.etiqueta) + "»)" : ""}. El fichero es idéntico al original y no ha sido alterado.` +
+             (INT_DEBILES[coincide.alg] ? ` <em>Ojo: ${coincide.alg} es un algoritmo antiguo; sirve para descartar errores de copia o de envío, pero no garantiza frente a una manipulación deliberada.</em>` : "") });
+  } else {
+    // Para el detalle se usa la primera candidata del mismo tipo que la más habitual
+    const ref = cands.find(c => c.alg === "SHA-256") || cands[0];
+    const calc = await intHash(A, ref.alg);
+    if (turno !== intTurno) return;
+    const d = intDiff(ref.hex, calc);
+    INT.resultado = { ok: false, alg: ref.alg, calculada: calc, referencia: ref.hex, etiqueta: ref.etiqueta, candidatas: cands.length, sha256: sha };
+    intVeredicto({ estado: "err", icono: "✕", titulo: "INTEGRIDAD NO VÁLIDA",
+      texto: `La huella del fichero <strong>no coincide</strong> con la de referencia (${d.n} de ${calc.length} caracteres distintos). ` +
+             "O el fichero ha cambiado respecto al original (basta con un solo byte), o la huella de referencia corresponde a otro fichero. Confírmalo con quien te lo envió.",
+      extra: `<div class="int-diff"><span class="lab">Esperada (${ref.alg})</span>${d.html}<br><span class="lab">Calculada</span>${calc}</div>` });
+  }
+}
+
+/* ── Informe de verificación ── */
+function intInformeHTML() {
+  const r = INT.resultado, A = INT.A, ahora = new Date();
+  const e = escapeHtml;
+  const quien = $("intWho").value.trim(), nota = $("intNote").value.trim();
+  const origenRef = INT.modo === "fichero"
+    ? "Calculada a partir del fichero original «" + e(INT.B.file.name) + "»"
+    : (INT.refOrigen === "manual" ? "Introducida a mano (pegada en la aplicación)" : "Extraída del archivo «" + e(INT.refOrigen) + "»") +
+      (r.etiqueta ? " · etiqueta: «" + e(r.etiqueta) + "»" : "") +
+      (r.candidatas > 1 ? ` · se encontraron ${r.candidatas} huellas en el texto` : "");
+  const fila = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
+  const ficha = (f, titulo) => `
+    <h3 class="sec">${titulo}</h3>
+    <table>${fila("Nombre", e(f.name))}${fila("Tamaño", e(intTam(f.size)))}${f.lastModified ? fila("Última modificación", e(intFecha(new Date(f.lastModified))) + ' <span class="muted">(según el sistema de archivos)</span>') : ""}${f.type ? fila("Tipo", e(f.type)) : ""}</table>`;
+  const algCmd = { "MD5": ["md5 -r", "MD5"], "SHA-1": ["shasum -a 1", "SHA1"], "SHA-256": ["shasum -a 256", "SHA256"], "SHA-384": ["shasum -a 384", "SHA384"], "SHA-512": ["shasum -a 512", "SHA512"] }[r.alg];
+  const color = r.ok ? "#16a34a" : "#dc2626", fondo = r.ok ? "#dcfce7" : "#fee2e2";
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verificación de integridad — ${e(A.file.name)} — ${ahora.toISOString().slice(0, 10)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1d2b3a;background:#f5f7fa;line-height:1.55;padding:28px 16px}
+  .page{max-width:900px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 28px rgba(29,43,58,.10);overflow:hidden}
+  header{padding:30px 38px 24px;border-left:7px solid #ff5a5f}
+  h1{font-size:1.65rem;letter-spacing:-.02em}
+  .subtitle{color:#5a6b7b;font-size:.92rem;margin-top:5px}
+  .body{padding:26px 38px 38px}
+  .hero{display:flex;gap:20px;align-items:center;border:2px solid ${color};background:${fondo};color:${color};border-radius:14px;padding:18px 22px}
+  .hero .ic{width:58px;height:58px;border-radius:50%;background:${color};color:#fff;font-size:1.8rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+  .hero h2{font-size:1.3rem;letter-spacing:.02em}
+  .hero p{font-size:.88rem;color:#1d2b3a}
+  h3.sec{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#5a6b7b;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid #e3e8ee}
+  table{width:100%;border-collapse:collapse;font-size:.84rem}
+  th{width:30%;background:#f5f7fa;text-align:left;padding:8px 11px;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:#5a6b7b;border:1px solid #e3e8ee;vertical-align:top}
+  td{padding:8px 11px;border:1px solid #e9edf2;vertical-align:top;word-break:break-all}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem}
+  mark{background:#fee2e2;color:#dc2626;font-weight:700}
+  .muted{color:#5a6b7b}
+  .sm{font-size:.8rem}
+  .cmd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;background:#f5f7fa;border:1px solid #e9edf2;border-radius:8px;padding:7px 10px;margin:5px 0 10px;word-break:break-all}
+  .legal a{display:block;color:#1d2b3a;text-decoration:none;border:1px solid #e3e8ee;border-radius:10px;padding:9px 13px;margin-bottom:7px;font-size:.8rem}
+  .legal a strong{color:#ff5a5f}
+  .note{background:#fef3c7;border:1px solid #b45309;color:#7c4a06;border-radius:10px;padding:12px 15px;font-size:.8rem;margin-top:14px}
+  .firma{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:30px}
+  .firma div{border-top:1px solid #8a99a8;padding-top:6px;font-size:.76rem;color:#5a6b7b;min-height:60px}
+  footer{border-top:1px solid #e3e8ee;margin-top:26px;padding-top:16px;text-align:center;font-size:.76rem;color:#5a6b7b}
+  footer .author span{color:#ff5a5f;font-weight:600}
+  .toolbar{max-width:900px;margin:0 auto 14px;display:flex;gap:10px;justify-content:flex-end}
+  .btn{background:#ff5a5f;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit}
+  @media(max-width:600px){header,.body{padding-left:20px;padding-right:20px}.firma{grid-template-columns:1fr}}
+  @media print{body{background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{box-shadow:none;border-radius:0;max-width:none}.toolbar{display:none}table,.hero{page-break-inside:avoid}}
+  @page{margin:14mm}
+</style></head><body>
+<div class="toolbar"><button class="btn" onclick="window.print()">🖨 Imprimir / Guardar como PDF</button></div>
+<div class="page">
+  <header>
+    <h1>Informe de verificación de integridad</h1>
+    <div class="subtitle">Comprobación por huella digital (función hash criptográfica) · RGPD art. 5.1.f y art. 32<br>${e(intFecha(ahora))}</div>
+  </header>
+  <div class="body">
+    <div class="hero"><div class="ic">${r.ok ? "✓" : "✕"}</div><div>
+      <h2>${r.ok ? "INTEGRIDAD CONFIRMADA" : "INTEGRIDAD NO VÁLIDA"}</h2>
+      <p>${r.ok
+        ? (INT.modo === "fichero" ? "El fichero comprobado es idéntico, byte a byte, al fichero original." : "La huella del fichero comprobado coincide con la huella de referencia: el fichero no ha sido alterado.")
+        : (INT.modo === "fichero" ? "El fichero comprobado no es idéntico al fichero original." : "La huella del fichero comprobado no coincide con la huella de referencia: el fichero ha cambiado o la huella corresponde a otro fichero.")}</p>
+    </div></div>
+
+    ${ficha(A.file, "Fichero comprobado")}
+    ${INT.modo === "fichero" ? ficha(INT.B.file, "Fichero original de referencia") : ""}
+
+    <h3 class="sec">Comparación de huellas</h3>
+    <table>
+      ${fila("Algoritmo", e(r.alg) + (INT_DEBILES[r.alg] ? ' <span class="muted">(algoritmo antiguo: detecta errores accidentales, no garantiza frente a manipulación deliberada)</span>' : ""))}
+      ${fila("Huella de referencia", '<span class="mono">' + (r.ok ? r.referencia : intDiff(r.referencia, r.calculada).html) + "</span>")}
+      ${fila("Huella calculada", '<span class="mono">' + r.calculada + "</span>")}
+      ${fila("Procedencia de la referencia", origenRef)}
+      ${r.alg !== "SHA-256" && r.sha256 ? fila("Huella SHA-256 del fichero", '<span class="mono">' + r.sha256 + "</span>") : ""}
+      ${fila("Resultado", `<strong style="color:${color}">${r.ok ? "Coinciden" : "No coinciden"}</strong>`)}
+    </table>
+
+    <h3 class="sec">Datos de la verificación</h3>
+    <table>
+      ${fila("Fecha y hora", e(intFecha(ahora)))}
+      ${fila("Verificado por", quien ? e(quien) : '<span class="muted">—</span>')}
+      ${fila("Procedencia / observaciones", nota ? e(nota) : '<span class="muted">—</span>')}
+      ${fila("Herramienta", "Anonimizador RGPD v13 · Comprobar integridad · cálculo local en el navegador (el fichero no sale del equipo)")}
+    </table>
+
+    <h3 class="sec">Cómo interpretar y reproducir este resultado</h3>
+    <p class="sm">Una huella digital (hash) es un resumen matemático del contenido del fichero: si cambia un solo byte, la huella cambia por completo. Si dos huellas coinciden, el contenido es idéntico. El nombre del archivo y su fecha no forman parte de la huella.</p>
+    <p class="sm" style="margin-top:8px">Cualquier persona puede repetir la comprobación con las herramientas del propio sistema operativo:</p>
+    <div class="sm muted" style="margin-top:6px">macOS / Linux (Terminal):</div>
+    <div class="cmd">${algCmd[0]} "${e(A.file.name)}"</div>
+    <div class="sm muted">Windows (símbolo del sistema):</div>
+    <div class="cmd">certutil -hashfile "${e(A.file.name)}" ${algCmd[1]}</div>
+
+    <h3 class="sec">Marco de referencia</h3>
+    <div class="legal">
+      <a href="https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX%3A32016R0679" target="_blank" rel="noopener"><strong>RGPD (UE) 2016/679</strong> — art. 5.1.f (integridad y confidencialidad) y art. 32 (seguridad del tratamiento)</a>
+      <a href="https://www.boe.es/buscar/act.php?id=BOE-A-2022-7191" target="_blank" rel="noopener"><strong>Esquema Nacional de Seguridad</strong> — Real Decreto 311/2022 (dimensión de integridad)</a>
+      <a href="https://csrc.nist.gov/pubs/fips/180-4/upd1/final" target="_blank" rel="noopener"><strong>NIST FIPS 180-4</strong> — Secure Hash Standard (familia SHA)</a>
+    </div>
+    <div class="note">⚠️ Este informe acredita que el contenido del fichero coincide (o no) con la huella de referencia indicada. No acredita quién generó esa huella ni la autenticidad de su origen: para ello, la huella debe recibirse por un canal fiable o ir firmada electrónicamente.</div>
+
+    <div class="firma"><div>Firma de quien verifica</div><div>Fecha</div></div>
+
+    <footer>
+      <div>Procesamiento 100% local en el navegador · Sin conexiones a servidores externos</div>
+      <div class="author" style="margin-top:5px">Aplicación creada y diseñada por <span>Carlos J. Galán Doval</span> · 2026</div>
+    </footer>
+  </div>
+</div>
+</body></html>`;
+}
+
+function intNombreInforme() {
+  const base = INT.A.file.name.replace(/\.[^.]+$/, "").replace(/[^\wÀ-ÿ\-]+/g, "_").slice(0, 60);
+  return "Verificacion_integridad_" + base + "_" + new Date().toISOString().slice(0, 10) + ".html";
+}
+
+/* ── Abrir / cerrar y conectar la interfaz ── */
+function intAbierta() { const o = $("intOverlay"); return !!o && o.classList.contains("open"); }
+function intAbrir() { $("intOverlay").classList.add("open"); }
+function intCerrar() { $("intOverlay").classList.remove("open"); }
+
+/* Soltar archivos en cualquier parte de la ventana mientras está abierta:
+   si ya hay fichero y lo soltado parece una huella (.txt, informe…), va a la
+   referencia; si no, al hueco que falte. */
+function intSoltarGlobal(files) {
+  const f = files && files[0];
+  if (!f) return;
+  const pareceHuella = /\.(txt|sha\d*|md5|sum|sfv|html?|json|xml)$/i.test(f.name) && f.size < 5 * 1024 * 1024;
+  if (INT.modo === "fichero") intCargar(!INT.A ? "A" : "B", f);
+  else if (INT.A && pareceHuella) intCargarRefArchivo(f);
+  else intCargar("A", f);
+}
+
+window.addEventListener("load", () => {
+  $("intOpen").onclick = intAbrir;
+  $("intClose").onclick = intCerrar;
+  $("intOverlay").onclick = e => { if (e.target === $("intOverlay")) intCerrar(); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && intAbierta()) intCerrar(); });
+
+  // Modo
+  document.querySelectorAll(".int-mode-b").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".int-mode-b").forEach(x => x.classList.toggle("active", x === b));
+    INT.modo = b.dataset.mode;
+    $("intRefHuella").classList.toggle("hidden", INT.modo !== "huella");
+    $("intRefFichero").classList.toggle("hidden", INT.modo !== "fichero");
+    intComprobar();
+  });
+
+  // Zonas de carga (clic y arrastre propios; no pasan al arrastre global)
+  const zona = (el, alSoltar) => {
+    el.addEventListener("dragover", e => { e.preventDefault(); e.stopPropagation(); el.classList.add("over"); });
+    el.addEventListener("dragleave", () => el.classList.remove("over"));
+    el.addEventListener("drop", e => {
+      e.preventDefault(); e.stopPropagation(); el.classList.remove("over");
+      if (e.dataTransfer.files && e.dataTransfer.files.length) alSoltar(e.dataTransfer.files[0]);
+    });
+  };
+  zona($("intDropA"), f => intCargar("A", f));
+  zona($("intDropB"), f => intCargar("B", f));
+  zona($("intRefHuella"), f => intCargarRefArchivo(f));
+  $("intDropA").onclick = () => $("intFileA").click();
+  $("intDropB").onclick = () => $("intFileB").click();
+  $("intFileA").onchange = e => { intCargar("A", e.target.files[0]); e.target.value = ""; };
+  $("intFileB").onchange = e => { intCargar("B", e.target.files[0]); e.target.value = ""; };
+  $("intRefFileBtn").onclick = () => $("intRefFile").click();
+  $("intRefFile").onchange = e => { intCargarRefArchivo(e.target.files[0]); e.target.value = ""; };
+
+  let espera = null;
+  $("intRef").addEventListener("input", () => {
+    INT.refOrigen = "manual"; $("intRefSrc").textContent = "";
+    clearTimeout(espera); espera = setTimeout(intComprobar, 250);
+  });
+
+  // Copiar huellas
+  $("intOverlay").addEventListener("click", async e => {
+    const b = e.target.closest("[data-copiar]");
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    try { await navigator.clipboard.writeText(b.dataset.copiar); b.textContent = "✓ Copiada"; }
+    catch (err) { b.textContent = "No se pudo copiar"; }
+    setTimeout(() => b.textContent = "Copiar", 1500);
+  });
+
+  // «Verificado por» se recuerda en este navegador (comodidad, no imprescindible)
+  try { $("intWho").value = localStorage.getItem("anon_int_quien") || ""; } catch (e) {}
+  $("intWho").addEventListener("change", () => { try { localStorage.setItem("anon_int_quien", $("intWho").value.trim()); } catch (e) {} });
+
+  // Informe
+  $("intReport").onclick = () => {
+    if (!INT.resultado) return;
+    const blob = new Blob([intInformeHTML()], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (!w) downloadBlob(blob, intNombreInforme());
+  };
+  $("intReportDl").onclick = () => {
+    if (!INT.resultado) return;
+    downloadBlob(new Blob([intInformeHTML()], { type: "text/html;charset=utf-8" }), intNombreInforme());
+  };
+
+  // Limpiar
+  $("intReset").onclick = () => {
+    INT.A = null; INT.B = null; INT.refOrigen = "manual"; INT.resultado = null;
+    $("intRef").value = ""; $("intRefSrc").textContent = ""; $("intNote").value = "";
+    ["intInfoA", "intInfoB"].forEach(id => { $(id).classList.add("hidden"); $(id).innerHTML = ""; });
+    $("intDropATxt").textContent = "Suelta aquí el fichero a comprobar";
+    $("intDropBTxt").textContent = "Suelta aquí el fichero original";
+    intComprobar();
+  };
+
+  intComprobar();
+});
 </script>
 </body>
 </html>
