@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anonimizador de Datos — v13 (RGPD/LOPDGDD)</title>
+<title>Anonimizador de Datos — v15 (RGPD/LOPDGDD)</title>
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -418,6 +418,47 @@
   @media(max-width: 600px) { .int-actions { flex-direction: column; } .int-body { padding: 14px; } }
   @media(max-height: 760px) { .int-intro { display: none; } .int-drop { padding: 10px; } .int-drop svg { display: none; } #intRef { min-height: 70px; } .int-verdict { margin-top: 10px; padding: 10px 14px; } }
 
+  /* ── Medir riesgo de reidentificación (v14) ── */
+  .rk-top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: .84rem; color: var(--slate); }
+  .rk-top select { padding: 5px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: .84rem; }
+  .rk-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 118px; overflow: auto; margin-bottom: 12px; }
+  .rk-chip { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); cursor: pointer; color: var(--slate); }
+  .rk-chip input { accent-color: var(--coral); margin: 0; cursor: pointer; }
+  .rk-chip.on { border-color: var(--coral); color: var(--ink); background: rgba(255, 90, 95, .06); }
+  .rk-chip.neu { border-color: var(--ok); background: var(--okbg); }
+  .rk-chip small { font-weight: 600; color: var(--slate); font-size: .68rem; }
+  .rk-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .rk-stat { border: 1px solid var(--line); border-radius: 12px; padding: 9px 6px; text-align: center; }
+  .rk-stat b { display: block; font-size: 1.3rem; font-weight: 800; line-height: 1.2; }
+  .rk-stat span { font-size: .7rem; color: var(--slate); }
+  .rk-stat.good b { color: var(--ok); } .rk-stat.mid b { color: var(--warn); } .rk-stat.bad b { color: var(--danger); }
+  .rk-box { border: 1px solid var(--line); border-radius: 12px; padding: 8px; overflow: auto; }
+  #rkSug { max-height: 190px; margin-bottom: 12px; }
+  #rkRaras { max-height: 170px; }
+  #rkRaras table.prev { margin-top: 0; }
+  .rk-prop { display: flex; gap: 10px; align-items: center; padding: 7px 8px; border-radius: 9px; }
+  .rk-prop + .rk-prop { border-top: 1px solid var(--line); border-radius: 0; }
+  .rk-prop-t { flex: 1; min-width: 0; font-size: .82rem; }
+  .rk-prop-t span { display: block; font-size: .74rem; color: var(--slate); }
+  .rk-prop-t span b.cero { color: var(--ok); }
+  .rk-prop-t em { display: block; font-size: .7rem; color: var(--warn); }
+  .rk-vacio { font-size: .8rem; color: var(--slate); padding: 8px; }
+  .rk-nota { font-size: .74rem; color: var(--slate); margin-top: 10px; }
+  @media(max-width: 560px) { .rk-stats { grid-template-columns: 1fr 1fr; } }
+  @media(max-height: 760px) { #rkSug { max-height: 160px; } #rkRaras { max-height: 150px; } .rk-chips { max-height: 96px; } .rk-nota { display: none; } }
+
+  /* ── Tabla de correspondencia cifrada (v15) ── */
+  .crOff { opacity: .45; pointer-events: none; }
+  #crTabla { max-height: 170px; margin-bottom: 12px; }
+  #crTabla table.prev { margin-top: 0; }
+  .cr-pw { display: flex; gap: 8px; margin-top: 10px; }
+  .cr-pw input { flex: 1; min-width: 0; }
+  .ck-modal { max-width: 520px; }
+  .ck-modal label.lb { display: block; font-size: .78rem; font-weight: 700; color: var(--slate); margin: 10px 0 4px; }
+  .ck-modal input[type=password], .ck-modal input[type=text] { width: 100%; }
+  .ck-msg { color: var(--danger); font-size: .82rem; min-height: 1.2em; margin-top: 8px; }
+  @media(max-height: 760px) { #crTabla { max-height: 130px; } }
+
   /* ── Footer ── */
   .app-footer { text-align: center; margin-top: 12px; padding-bottom: 90px; }
   .app-footer .note { display: block; font-size: .8rem; color: var(--slate); }
@@ -443,13 +484,14 @@
 <div class="wrap">
   <header>
     <button class="theme-tog" id="themeTog" title="Cambiar tema">🌓</button>
-    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v13 · RGPD</span></div>
+    <div class="logo"><span class="dot"></span> Anonimizador <span class="ver">v15 · RGPD</span></div>
     <p>Pseudonimización conforme al RGPD y LOPDGDD · Soporte XLSX, CSV, ODS · Revisión interactiva · Comprobación de integridad · 100% local</p>
     <div class="badge">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Procesamiento 100% local en tu navegador · Sin cookies · Sin trazas
     </div>
     <button class="int-btn" id="intOpen" title="Comprobar que un fichero es idéntico al original mediante su huella digital">🔐 Comprobar integridad</button>
+    <button class="int-btn" id="crOpen" title="Abrir una tabla de correspondencia cifrada para consultar o deshacer una seudonimización">🔑 Tabla de correspondencia</button>
   </header>
 
   <!-- BOTÓN AYUDA FLOTANTE -->
@@ -460,7 +502,7 @@
     <h2>⚖️ Aviso previo · Marco normativo</h2>
     <p class="sub">Antes de procesar datos personales, lee y acepta lo siguiente.</p>
     <div class="legal">
-      <h3>1. Qué hace esta herramienta (v13)</h3>
+      <h3>1. Qué hace esta herramienta (v15)</h3>
       <p>Realiza una <strong>pseudonimización</strong> (RGPD art. 4.5) o <strong>anonimización</strong> de los datos personales contenidos en hojas de cálculo (<code>.xlsx</code>, <code>.csv</code>, <code>.ods</code>), permitiendo procesamiento por lotes. El archivo resultante se entrega siempre en formato <code>.xlsx</code>. Los datos se sustituyen según el modo elegido por el usuario para cada columna:</p>
       <ul>
         <li><strong>Datos ficticios verosímiles</strong> — preserva utilidad analítica.</li>
@@ -473,6 +515,8 @@
       <p>Además, incluye <strong>detección de PII en texto libre</strong> para evitar fugas de información en columnas como "Observaciones", con un modal interactivo para su revisión previa: cada hallazgo se aprueba o rechaza individualmente y el valor propuesto que se muestra es <strong>exactamente</strong> el que se escribirá en la celda.</p>
       
       <p>Incluye también, en el botón <strong>🔐 Comprobar integridad</strong> de la cabecera, una herramienta para confirmar mediante su huella digital (SHA-256 u otras) que un fichero recibido es idéntico al original, con informe de verificación imprimible.</p>
+
+<p>Opcionalmente puede generar una <strong>tabla de correspondencia cifrada</strong> con contraseña para poder revertir el proceso. Si la generas, el resultado es una <strong>seudonimización</strong> (RGPD art. 4.5): sigue siendo dato personal y la tabla debe custodiarse por separado.</p>
 
       <h3>2. Base jurídica del uso</h3>
       <p>La pseudonimización por sí sola <strong>no exime</strong> al responsable del tratamiento de identificar una base jurídica válida (RGPD art. 6) ni de aplicar el resto de principios (art. 5). Esta herramienta es una <strong>medida técnica y organizativa</strong> en el sentido de los arts. 25 y 32 RGPD.</p>
@@ -607,6 +651,7 @@
           <label class="check"><input type="checkbox" id="optSummary" checked> <span><strong>Hoja "Anonimización"</strong><br><span style="color:var(--slate);font-size:.78rem">Añade resumen al final del libro.</span></span></label>
           <label class="check"><input type="checkbox" id="optScanFree"> <span><strong>PII en texto libre</strong><br><span style="color:var(--slate);font-size:.78rem">Escanear y permitir revisión interactiva (puede ser muy lento).</span></span></label>
           <label class="check"><input type="checkbox" id="optSaveConfig"> <span><strong>Guardar configuración (Local)</strong><br><span style="color:var(--slate);font-size:.78rem">Se recargará automáticamente la próxima vez.</span></span></label>
+          <label class="check"><input type="checkbox" id="optCorr"> <span><strong>🔑 Tabla de correspondencia cifrada</strong><br><span style="color:var(--slate);font-size:.78rem">Guarda aparte, con contraseña, el dato real de cada celda sustituida para poder deshacerlo. El resultado será seudonimizado, no anónimo.</span></span></label>
         </div>
 
         <div class="flex-row" style="margin-top: 16px; justify-content: flex-start; gap: 10px;">
@@ -616,6 +661,7 @@
 
         <div class="btn-row" style="margin-top: 20px;">
           <button class="btn btn-ghost" id="prevBtn">👁 Vista previa</button>
+          <button class="btn btn-ghost" id="riskBtn" title="Simula la salida de esta hoja y mide cuántas filas podrían reconocerse por la combinación de edad, sexo, código postal, fechas…">🧩 Medir riesgo</button>
           <button class="btn btn-primary" id="go">Anonimizar y descargar</button>
         </div>
         <button class="btn btn-ghost" id="reset" style="margin-top:10px;">Comenzar de nuevo</button>
@@ -772,6 +818,111 @@
         <button class="btn btn-ghost" id="intReportDl" disabled>⬇ Descargar informe (.html)</button>
         <button class="btn btn-ghost" id="intReset">Limpiar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MEDIR EL RIESGO DE REIDENTIFICACIÓN (v14)
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="rkOverlay">
+  <div class="modal int-modal" role="dialog" aria-modal="true" aria-labelledby="rkTitle">
+    <div class="modal-head">
+      <span style="font-size:1.4rem">🧩</span>
+      <h2 id="rkTitle">Riesgo de reidentificación <span class="int-muted" id="rkHoja" style="font-weight:400"></span></h2>
+      <button class="modal-close" id="rkClose" title="Cerrar">✕</button>
+    </div>
+    <div class="int-body">
+      <div class="int-grid">
+        <div class="int-col">
+          <div class="int-step"><span class="int-n">1</span> Columnas que, combinadas, podrían delatar a alguien</div>
+          <div class="rk-chips" id="rkCols"></div>
+          <div class="rk-top">
+            <label for="rkUmbral">Cada combinación debe repetirse al menos</label>
+            <select id="rkUmbral"><option value="2">2 veces</option><option value="3">3 veces</option><option value="5" selected>5 veces (habitual)</option><option value="10">10 veces</option></select>
+          </div>
+          <div class="rk-stats" id="rkStats"></div>
+          <div class="int-verdict wait" id="rkVerdict"></div>
+          <p class="rk-nota">Se mide sobre la <strong>salida simulada</strong> de esta hoja con la configuración actual; el archivo no se modifica. Las columnas con datos ficticios, hash, sustitución o supresión no cuentan, porque ya no contienen el dato real.</p>
+        </div>
+        <div class="int-col">
+          <div class="int-step"><span class="int-n">2</span> Qué cambio reduce más el riesgo</div>
+          <div class="rk-box" id="rkSug"></div>
+          <div class="int-step"><span class="int-n">3</span> Combinaciones más raras (las que hay que vigilar)</div>
+          <div class="rk-box" id="rkRaras"></div>
+        </div>
+      </div>
+      <div class="btn-row int-actions"><button class="btn btn-primary" id="rkCerrar">Volver a la configuración</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TABLA DE CORRESPONDENCIA CIFRADA (v15)
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="ckOverlay">
+  <div class="modal ck-modal" role="dialog" aria-modal="true" aria-labelledby="ckTitle">
+    <div class="modal-head">
+      <span style="font-size:1.4rem">🔑</span>
+      <h2 id="ckTitle">Contraseña de la tabla de correspondencia</h2>
+      <button class="modal-close" id="ckClose" title="Cancelar">✕</button>
+    </div>
+    <div class="int-body">
+      <p class="int-intro" style="display:block">Con cada archivo se generará una tabla cifrada (<code>.anoncorr</code>) con el dato real de cada celda sustituida. Solo se podrá abrir con esta contraseña.</p>
+      <label class="lb" for="ckPw1">Contraseña (mínimo 10 caracteres)</label>
+      <input type="password" class="small-input" id="ckPw1" autocomplete="new-password">
+      <label class="lb" for="ckPw2">Repítela</label>
+      <input type="password" class="small-input" id="ckPw2" autocomplete="new-password">
+      <label class="check" style="font-size:.82rem"><input type="checkbox" id="ckVer"> Mostrar lo que escribo</label>
+      <div class="ck-msg" id="ckMsg"></div>
+      <div class="alert warn" style="margin-top:4px">⚠ <span>La contraseña <strong>no se guarda en ningún sitio</strong>: si la pierdes, la tabla no se podrá abrir nunca. Guarda la tabla <strong>separada</strong> del archivo anonimizado y no las envíes juntas.</span></div>
+      <div class="btn-row int-actions">
+        <button class="btn btn-ghost" id="ckCancel">Cancelar</button>
+        <button class="btn btn-primary" id="ckOk">Continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="crOverlay">
+  <div class="modal int-modal" role="dialog" aria-modal="true" aria-labelledby="crTitle">
+    <div class="modal-head">
+      <span style="font-size:1.4rem">🔑</span>
+      <h2 id="crTitle">Tabla de correspondencia</h2>
+      <button class="modal-close" id="crClose" title="Cerrar y olvidar">✕</button>
+    </div>
+    <div class="int-body">
+      <p class="int-intro">Abre una tabla de correspondencia cifrada para consultar a qué dato real corresponde un dato anonimizado o para devolver los datos reales a un archivo. Hazlo solo con autorización del responsable del tratamiento. Todo ocurre en tu equipo.</p>
+      <div class="int-grid">
+        <div class="int-col">
+          <div class="int-step"><span class="int-n">1</span> Abrir la tabla</div>
+          <div class="drop int-drop" id="crDropT">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <strong id="crDropTTxt">Suelta aquí la tabla (.anoncorr)</strong>
+            <span>o haz clic para elegirla</span>
+          </div>
+          <input type="file" id="crFileT" accept=".anoncorr,.json">
+          <div class="cr-pw">
+            <input type="password" class="small-input" id="crPw" placeholder="Contraseña de la tabla" autocomplete="off">
+            <button class="btn btn-primary" id="crAbrir" disabled style="margin:0;width:auto;padding:8px 18px;font-size:.9rem">Abrir</button>
+          </div>
+          <div class="int-det" id="crEstado"></div>
+          <p class="rk-nota">Al cerrar esta ventana, la tabla descifrada se borra de la memoria. La aplicación no guarda ni la tabla ni la contraseña.</p>
+        </div>
+        <div class="int-col crOff" id="crDerecha">
+          <div class="int-step"><span class="int-n">2</span> Buscar un dato <span class="int-muted" id="crCuenta" style="font-weight:400"></span></div>
+          <input type="text" class="small-input" id="crBuscar" placeholder="Escribe un dato anonimizado o un dato real…" style="width:100%;margin-bottom:8px">
+          <div class="rk-box" id="crTabla"></div>
+          <div class="int-step"><span class="int-n">3</span> Devolver los datos reales a un archivo</div>
+          <div class="drop int-drop" id="crDropX">
+            <strong id="crDropXTxt">Suelta aquí el archivo anonimizado (.xlsx)</strong>
+            <span>o haz clic para elegirlo</span>
+          </div>
+          <input type="file" id="crFileX" accept=".xlsx">
+          <div id="crRestMsg"></div>
+        </div>
+      </div>
+      <div class="btn-row int-actions"><button class="btn btn-ghost" id="crCerrar">Cerrar y olvidar la tabla</button></div>
     </div>
   </div>
 </div>
@@ -969,6 +1120,20 @@
               🔒 <strong>Máxima protección</strong> — supresión de identificadores y categorías especiales; sólo se conservan datos generalizados.
             </div>
             <div class="hc-desc" style="margin-top:8px">✔ Después puedes ajustar manualmente cualquier columna: el perfil se marca como personalizado y el indicador de protección se recalcula al instante.</div>
+          </div>
+
+          <div class="help-card highlight">
+            <div class="hc-icon">🔑</div>
+            <div class="hc-title">Tabla de correspondencia cifrada (v15)</div>
+            <div class="hc-desc">Opción desactivada por defecto. Si la marcas, al anonimizar se te pide una contraseña y, junto a cada archivo, se genera una tabla <code>.anoncorr</code> con el dato real de cada celda sustituida, cifrada con AES-256-GCM. Sirve para consultar o deshacer la seudonimización si el responsable del tratamiento o un comité lo autoriza.</div>
+            <div class="hc-desc" style="margin-top:8px">El botón <strong>🔑 Tabla de correspondencia</strong> de la cabecera la abre con su contraseña: permite buscar un dato y <strong>devolver los datos reales</strong> al archivo anonimizado. Ojo: mientras la tabla exista, el archivo está <em>seudonimizado</em> (sigue siendo dato personal). Guárdala separada, no la envíes junto al archivo y destrúyela cuando ya no haga falta. Si pierdes la contraseña, no hay forma de recuperarla.</div>
+          </div>
+
+          <div class="help-card highlight">
+            <div class="hc-icon">🧩</div>
+            <div class="hc-title">Medir riesgo de reidentificación (v14)</div>
+            <div class="hc-desc">El botón <strong>🧩 Medir riesgo</strong> del paso 2 simula la salida de la hoja actual y cuenta cuántas filas quedarían solas o en grupos pequeños al combinar los cuasi-identificadores (edad, sexo, código postal, municipio, fechas…). Muestra el k mínimo, las filas únicas, las combinaciones más raras con su número de fila y <strong>qué cambio concreto reduce más el riesgo</strong> (por ejemplo, generalizar la fecha al año), con un botón para aplicarlo. Puedes elegir qué columnas cuentan y el umbral (5 es lo habitual).</div>
+            <div class="hc-desc" style="margin-top:8px">Las columnas con datos ficticios, hash, sustitución o supresión no cuentan: ya no contienen el dato real. El informe final usa el mismo criterio.</div>
           </div>
 
           <div class="help-card highlight">
@@ -1911,6 +2076,15 @@ $("go").onclick = async () => {
     summary: $("optSummary").checked, coherent: $("optCoherent").checked, 
     scanFree: $("optScanFree").checked, onlyModified: $("optOnlyModifiedSheets").checked 
   };
+
+  // v15: tabla de correspondencia cifrada (opcional) — se pide la contraseña antes de empezar
+  if($("optCorr").checked) {
+    btn.innerHTML = 'Esperando contraseña...';
+    const pw = await corrPedirClave();
+    if(!pw) { btn.disabled = false; btn.textContent = "Anonimizar y descargar"; return; }
+    opts.corrClave = pw;
+    btn.innerHTML = '<span class="spinner"></span>Analizando PII...';
+  }
   
   const progDiv = $("progressBar"); if(progDiv) progDiv.classList.remove("hidden"); const progFill = progDiv.querySelector("div");
   
@@ -1998,7 +2172,15 @@ $("go").onclick = async () => {
     const b = document.createElement("button"); b.className="btn btn-primary"; b.style.cssText="margin:0;width:auto;padding:8px 14px;font-size:.9rem;"; 
     b.textContent="Descargar"; b.onclick=()=>downloadBlob(o.blob, o.name); 
     div.appendChild(b); dlList.appendChild(div); 
+    if(o.corr) {   // v15: tabla de correspondencia cifrada de este archivo
+      const d2 = document.createElement("div"); d2.className="filebar";
+      d2.innerHTML = `<div class="fi">🔑 ${escapeHtml(o.corr.name)}</div><div class="fz">tabla cifrada · ${o.corr.registros.toLocaleString("es-ES")} celdas</div>`;
+      const b2 = document.createElement("button"); b2.className="btn btn-ghost"; b2.style.cssText="margin:0;width:auto;padding:8px 14px;font-size:.9rem;";
+      b2.textContent="Descargar tabla"; b2.onclick=()=>downloadBlob(o.corr.blob, o.corr.name);
+      d2.appendChild(b2); dlList.appendChild(d2);
+    }
   });
+  if(STATE.outputs.some(o=>o.corr)) $("doneMsg").innerHTML += `<br><span style="font-size:.85rem">🔑 Descarga también la <strong>tabla de correspondencia</strong> y guárdala separada del archivo anonimizado.</span>`;
   
   if(STATE.outputs[0]) downloadBlob(STATE.outputs[0].blob, STATE.outputs[0].name);
   
@@ -2012,6 +2194,7 @@ async function procesarArchivo(file, opts, fileIdx) {
   }
   const wb = await readAsWorkbook(file.originalFile);
   let totalCambiadas = 0, cambiosPorRegla = {}, cambiosFreeText = 0;
+  const corr = opts.corrClave ? corrNueva(file) : null;   // v15: tabla de correspondencia
   
   const sheetsToProcess = opts.onlyModified ? file.sheets.filter(s => s.cols.some(c=>c.on)) : file.sheets;
   
@@ -2049,6 +2232,7 @@ async function procesarArchivo(file, opts, fileIdx) {
         
         const fake = await calcularConCoherencia(original, col, opts.coherent);
         aplicarFakeCelda(cell, fake, original, opts, col.mode, col.rule?col.rule.t:"genérico");
+        if(corr) corr.reg(sheetCfg.name, R, C, col.header, col.mode, original, valorCrudo(cell));
         totalCambiadas++;
         
         const k = (col.rule?col.rule.id:"_generic_");
@@ -2101,6 +2285,7 @@ async function procesarArchivo(file, opts, fileIdx) {
       if(!ws) continue;
       const cell = ws.getRow(g.row).getCell(g.col);
       let txt = String(valorCrudo(cell));
+      const txtAntes = txt;
       let applied = 0;
       // De atrás hacia delante: los índices anteriores no se ven afectados
       g.findings.sort((a,b) => b.index - a.index);
@@ -2114,6 +2299,7 @@ async function procesarArchivo(file, opts, fileIdx) {
       if(applied > 0) {
         const estilo = estiloAisladoDeCelda(cell);   // copia privada: no contamina otras celdas
         cell.value = txt;
+        if(corr) { const hc = (file.sheets.find(s => s.name === g.sheet) || {cols:[]}).cols[g.col-1]; corr.reg(g.sheet, g.row, g.col, hc ? hc.header : "", "texto libre", txtAntes, txt); }
         if(opts.highlight) estilo.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE082'}};
         cell.style = estilo;
         if(opts.comment) cell.note = {texts:[{text:`PII libre detectada y sustituida (${applied})`}]};
@@ -2143,7 +2329,14 @@ async function procesarArchivo(file, opts, fileIdx) {
   // k-anonimato REAL, calculado sobre los valores de SALIDA del archivo procesado
   const kInfo = await calcularKAnonimato(wb, file);
 
-  STATE.outputs.push({name: outName, blob, hashOrig: file.hashOrig, hashOut});
+  // v15: cifrar la tabla de correspondencia de este archivo
+  let corrOut = null;
+  if(corr) {
+    const cblob = await corrCifrar(corr, opts.corrClave, {outName, hashOut});
+    corrOut = { name: outName.replace(/\.xlsx$/i, "") + "_TABLA.anoncorr", blob: cblob, registros: corr.n };
+  }
+
+  STATE.outputs.push({name: outName, blob, hashOrig: file.hashOrig, hashOut, corr: corrOut});
 
   return {
     file: file.name, out: outName, hashOrig: file.hashOrig, hashOut,
@@ -2153,7 +2346,8 @@ async function procesarArchivo(file, opts, fileIdx) {
       prot: s.cols.filter(c=>(c.rule||c.art9||c.quasi)&&c.on).length,
       cols: s.cols.filter(c=>c.on).map(c=>({h:c.header, t:c.rule?c.rule.t:"genérico", m:c.mode, art9:c.art9}))
     })),
-    celdasCambiadas: totalCambiadas, cambiosFreeText, kAnonimato: kInfo.k, kDetalle: kInfo.detalle
+    celdasCambiadas: totalCambiadas, cambiosFreeText, kAnonimato: kInfo.k, kDetalle: kInfo.detalle,
+    corr: corrOut ? { name: corrOut.name, registros: corrOut.registros } : null
   };
 }
 
@@ -2164,10 +2358,19 @@ async function procesarArchivo(file, opts, fileIdx) {
 async function calcularKAnonimato(wb, file) {
   let kMin = Infinity; const detalle = [];
   for(const sheetCfg of file.sheets){
-    const quasiCols = sheetCfg.cols.filter(c => c.quasi);
-    if(quasiCols.length < 2) continue;
+    const quasiTodas = sheetCfg.cols.filter(c => c.quasi);
+    if(quasiTodas.length < 2) continue;
     const ws = wb.getWorksheet(sheetCfg.name);
     if(!ws || ws.rowCount < 2) continue;
+    // v14: las columnas con datos ficticios, hash, sustitución o supresión ya no llevan
+    // el dato real y no cuentan como cuasi-identificadores (mismo criterio que «Medir riesgo»)
+    const quasiCols = quasiTodas.filter(c => rkEstado(c) !== "neutral");
+    const neutral = quasiTodas.filter(c => rkEstado(c) === "neutral").map(c => c.header);
+    if(!quasiCols.length){
+      detalle.push({hoja: sheetCfg.name, k: ws.rowCount-1, cols: [], neutral, filas: ws.rowCount-1, unicas: 0, enRiesgo: 0});
+      if(ws.rowCount-1 < kMin) kMin = ws.rowCount-1;
+      continue;
+    }
     const groups = new Map();
     for(let R=2; R<=ws.rowCount; R++){
       if(R%5000===0) await new Promise(r=>setTimeout(r,0)); // Anti-freeze
@@ -2182,8 +2385,9 @@ async function calcularKAnonimato(wb, file) {
       groups.set(key, (groups.get(key)||0)+1);
     }
     if(!groups.size) continue;
-    let k = Infinity; for(const n of groups.values()) if(n<k) k=n;
-    detalle.push({hoja: sheetCfg.name, k, cols: quasiCols.map(c=>c.header)});
+    let k = Infinity, filas = 0, unicas = 0, enRiesgo = 0;
+    for(const n of groups.values()){ if(n<k) k=n; filas += n; if(n===1) unicas++; if(n<5) enRiesgo += n; }
+    detalle.push({hoja: sheetCfg.name, k, cols: quasiCols.map(c=>c.header), neutral, filas, unicas, enRiesgo});
     if(k < kMin) kMin = k;
   }
   return { k: kMin===Infinity ? 0 : kMin, detalle };
@@ -2238,9 +2442,18 @@ function construirInformeGlobal(infos, opts) {
     L.push("    SHA-256 in : " + info.hashOrig);
     L.push("    SHA-256 out: " + info.hashOut);
     L.push("    Celdas sustituidas: " + info.celdasCambiadas + " directas + " + info.cambiosFreeText + " en texto libre");
+    if(info.corr) {
+      L.push("    Tabla de correspondencia: GENERADA (" + info.corr.registros + " celdas) · " + info.corr.name);
+      L.push("      Cifrado AES-256-GCM, clave PBKDF2-SHA-256. Mientras exista, el archivo está");
+      L.push("      SEUDONIMIZADO (RGPD art. 4.5), no anonimizado. Custodiar por separado.");
+    }
     if(info.kAnonimato > 0){
       L.push("    Riesgo reidentificación: k-anonimato CALCULADO = " + info.kAnonimato + (info.kAnonimato < 5 ? "  ⚠ k<5: riesgo alto, considere generalizar más" : "  ✓"));
-      (info.kDetalle||[]).forEach(d => L.push('      · Hoja "' + d.hoja + '": k=' + d.k + " sobre [" + d.cols.join(", ") + "]"));
+      (info.kDetalle||[]).forEach(d => {
+        L.push('      · Hoja "' + d.hoja + '": k=' + d.k + (d.cols.length ? " sobre [" + d.cols.join(", ") + "]" : " (todos los cuasi-identificadores neutralizados)"));
+        if(d.cols.length) L.push("        Filas únicas: " + d.unicas + " · filas en grupos de menos de 5: " + d.enRiesgo + " de " + d.filas);
+        if(d.neutral && d.neutral.length) L.push("        No cuentan (ficticio/hash/sustitución/supresión): " + d.neutral.join(", "));
+      });
       L.push("      Nota: k calculado sobre los valores finales de los cuasi-identificadores");
       L.push("      detectados automáticamente; otros atributos no contemplados podrían");
       L.push("      reducir el k efectivo.");
@@ -2322,7 +2535,10 @@ function construirInformeHTML(infos, opts) {
       ? `<span class="kbadge" style="background:${info.kAnonimato>=5?'#dcfce7':info.kAnonimato>=2?'#fef3c7':'#fee2e2'};color:${info.kAnonimato>=5?'#16a34a':info.kAnonimato>=2?'#b45309':'#dc2626'}">k = ${info.kAnonimato}${info.kAnonimato<5?' · riesgo alto':' · adecuado'}</span>`
       : `<span class="kbadge" style="background:#eef1f5;color:#5a6b7b">k no aplicable (&lt;2 cuasi-identificadores)</span>`;
     const kdet = (info.kDetalle||[]).map(d =>
-      `<div class="kdet">Hoja <strong>${escapeHtml(d.hoja)}</strong>: k = ${d.k} · sobre [${d.cols.map(escapeHtml).join(", ")}]</div>`).join("");
+      `<div class="kdet">Hoja <strong>${escapeHtml(d.hoja)}</strong>: k = ${d.k} · ` +
+      (d.cols.length ? `sobre [${d.cols.map(escapeHtml).join(", ")}] · filas únicas: <strong>${d.unicas}</strong> · en grupos de menos de 5: <strong>${d.enRiesgo}</strong> de ${d.filas}`
+                     : `todos los cuasi-identificadores están neutralizados`) +
+      (d.neutral && d.neutral.length ? `<br>No cuentan (ficticio, hash, sustitución o supresión): ${d.neutral.map(escapeHtml).join(", ")}` : "") + `</div>`).join("");
 
     const hojas = (info.sheets||[]).map(s => {
       if(!s.cols.length) return `<div class="hoja"><div class="hoja-t">${escapeHtml(s.name)} <span class="muted">· ${s.rows} filas</span></div><div class="muted sm">Ninguna columna modificada en esta hoja.</div></div>`;
@@ -2347,6 +2563,7 @@ function construirInformeHTML(infos, opts) {
         <div><span class="m-lab">Riesgo reidentificación</span>${kb}</div>
       </div>
       ${kdet}
+      ${info.corr ? `<div class="note" style="margin-top:10px">🔑 <strong>Tabla de correspondencia generada</strong> («${escapeHtml(info.corr.name)}», ${info.corr.registros} celdas; cifrado AES-256-GCM con clave derivada por PBKDF2-SHA-256). Mientras esta tabla exista, el archivo está <strong>seudonimizado</strong> (RGPD art. 4.5) y sigue siendo dato personal: custódiala separada del archivo, con acceso restringido, y destrúyela cuando deje de ser necesaria.</div>` : ""}
       <div class="sha"><span class="sha-lab">SHA-256 origen</span>${info.hashOrig}</div>
       <div class="sha"><span class="sha-lab">SHA-256 salida</span>${info.hashOut}</div>
       ${hojas}
@@ -2575,7 +2792,7 @@ window.onload = async () => {
 
   document.addEventListener("dragenter", e => {
     if(!llevaArchivos(e)) return;
-    if(intAbierta()) { e.preventDefault(); return; }   // v13: la ventana de integridad tiene sus propias zonas
+    if(intAbierta() || crAbierta() || $("ckOverlay").classList.contains("open") || $("rkOverlay").classList.contains("open")) { e.preventDefault(); return; }   // ventanas con zonas propias
     e.preventDefault(); dragDepth++; dropOv.classList.add("show");
   });
   document.addEventListener("dragover", e => {
@@ -2592,6 +2809,8 @@ window.onload = async () => {
     e.preventDefault();
     dragDepth = 0; dropOv.classList.remove("show");
     if(intAbierta()) { intSoltarGlobal(e.dataTransfer.files); return; }   // v13
+    if(crAbierta()) { crSoltarGlobal(e.dataTransfer.files); return; }      // v15
+    if($("ckOverlay").classList.contains("open") || $("rkOverlay").classList.contains("open")) return;
     if(e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
 
@@ -3028,7 +3247,7 @@ function intInformeHTML() {
       ${fila("Fecha y hora", e(intFecha(ahora)))}
       ${fila("Verificado por", quien ? e(quien) : '<span class="muted">—</span>')}
       ${fila("Procedencia / observaciones", nota ? e(nota) : '<span class="muted">—</span>')}
-      ${fila("Herramienta", "Anonimizador RGPD v13 · Comprobar integridad · cálculo local en el navegador (el fichero no sale del equipo)")}
+      ${fila("Herramienta", "Anonimizador RGPD v15 · Comprobar integridad · cálculo local en el navegador (el fichero no sale del equipo)")}
     </table>
 
     <h3 class="sec">Cómo interpretar y reproducir este resultado</h3>
@@ -3158,6 +3377,469 @@ window.addEventListener("load", () => {
   };
 
   intComprobar();
+});
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   MEDIR EL RIESGO DE REIDENTIFICACIÓN (v14)
+   Antes de descargar, simula la salida de la hoja actual con la
+   configuración elegida y mide el k-anonimato sobre los
+   cuasi-identificadores: filas únicas, filas en grupos pequeños,
+   combinaciones más raras y qué cambio concreto reduce más el riesgo.
+   No modifica el archivo: solo lee y cuenta, en el propio navegador.
+   ══════════════════════════════════════════════════════════════════════ */
+const RK_NIVELES = {
+  date: { ids: ["month", "quarter", "year"], txt: { month: "al mes", quarter: "al trimestre", year: "al año" }, sel: "dateGranularity", campo: "date", nombre: "las fechas" },
+  cp:   { ids: ["3digits", "2digits"], txt: { "3digits": "a 3 dígitos", "2digits": "a 2 dígitos" }, sel: "cpGranularity", campo: "cp", nombre: "los códigos postales" },
+  age:  { ids: ["5", "10"], txt: { "5": "en tramos de 5 años", "10": "en tramos de 10 años" }, sel: "ageGranularity", campo: "age", nombre: "las edades" }
+};
+const RK = { sheet: null, ws: null, n: 0, raw: {}, cache: {}, turno: 0 };
+
+/* Una columna protegida con datos ficticios, hash, sustitución o supresión ya no
+   aporta información real para reidentificar: no cuenta como cuasi-identificador. */
+function rkEstado(c) {
+  if (!c.on) return "raw";
+  if (c.mode === "generaliza") return "gen";
+  if (c.mode === "mascara") return "mask";
+  return "neutral";
+}
+function rkClave(v) { return (v == null || v === "") ? "∅" : (v instanceof Date ? "D" + v.getTime() : String(v)); }
+function rkVer(k) {
+  if (k === "∅") return "(vacío)";
+  if (/^D-?\d+$/.test(k)) { const d = new Date(+k.slice(1)); if (!isNaN(d)) return d.toISOString().slice(0, 10); }
+  return k;
+}
+function rkGranActual() {
+  return { date: $("dateGranularity").value, cp: $("cpGranularity").value, age: $("ageGranularity").value };
+}
+
+function rkCrudos(idx) {
+  if (RK.raw[idx]) return RK.raw[idx];
+  const a = new Array(RK.n);
+  for (let r = 0; r < RK.n; r++) a[r] = valorCrudo(RK.ws.getRow(r + 2).getCell(idx + 1));
+  return (RK.raw[idx] = a);
+}
+
+function rkTipo(c) {
+  const h = String(c.header || "");
+  if ((c.rule && c.rule.id === "cp") || /\b(c\.?p\.?|c[oó]digo\s*postal)/i.test(h)) return "cp";
+  if (/\bedad/i.test(h)) return "age";
+  if (/fecha|nacim|f\.\s*nac/i.test(h)) return "date";
+  const crudos = rkCrudos(c.idx);
+  for (let r = 0, vistos = 0; r < crudos.length && vistos < 20; r++) {
+    const v = crudos[r]; if (v == null || v === "") continue; vistos++;
+    if (v instanceof Date || /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(String(v)) || /^\d{4}-\d{2}-\d{2}/.test(String(v))) return "date";
+    break;
+  }
+  return "otro";
+}
+
+/* Valores de salida (como claves de texto) de una columna en un estado dado */
+function rkValores(c, estado, gran) {
+  const ck = c.idx + "|" + estado + "|" + (estado === "gen" ? gran.date + "," + gran.cp + "," + gran.age : "");
+  if (RK.cache[ck]) return RK.cache[ck];
+  const crudos = rkCrudos(c.idx), out = new Array(RK.n), regla = c.rule ? c.rule.id : "_";
+  if (estado === "raw") { for (let r = 0; r < RK.n; r++) out[r] = rkClave(crudos[r]); }
+  else if (estado === "mask") { for (let r = 0; r < RK.n; r++) { const v = crudos[r]; out[r] = (v == null || v === "") ? "∅" : rkClave(aplicarMascara(v, regla)); } }
+  else {
+    const guardada = { date: STATE.granularity.date, cp: STATE.granularity.cp, age: STATE.granularity.age };
+    Object.assign(STATE.granularity, gran);
+    try { for (let r = 0; r < RK.n; r++) { const v = crudos[r]; out[r] = (v == null || v === "") ? "∅" : rkClave(aplicarGeneraliza(v, regla)); } }
+    finally { Object.assign(STATE.granularity, guardada); }
+  }
+  return (RK.cache[ck] = out);
+}
+
+/* Agrupa las filas por la combinación de valores de salida y cuenta */
+function rkMedir(cols, estados, gran, umbral, conGrupos) {
+  const act = cols.map((c, i) => ({ c, e: estados[i] })).filter(x => x.e !== "neutral");
+  if (!act.length) return { filas: 0, grupos: 0, k: 0, unicas: 0, enRiesgo: 0, sinCols: true, lista: [] };
+  const vals = act.map(x => rkValores(x.c, x.e, gran));
+  const grupos = new Map(); let filas = 0;
+  for (let r = 0; r < RK.n; r++) {
+    let clave = "", vacia = true;
+    for (let j = 0; j < vals.length; j++) { const v = vals[j][r]; if (v !== "∅") vacia = false; clave += (j ? "¦" : "") + v; }
+    if (vacia) continue;
+    filas++;
+    const g = grupos.get(clave);
+    if (g) { g.n++; if (conGrupos && g.f.length < 6) g.f.push(r + 2); }
+    else grupos.set(clave, { n: 1, f: conGrupos ? [r + 2] : null });
+  }
+  let k = Infinity, unicas = 0, enRiesgo = 0;
+  for (const g of grupos.values()) { if (g.n < k) k = g.n; if (g.n === 1) unicas++; if (g.n < umbral) enRiesgo += g.n; }
+  const res = { filas, grupos: grupos.size, k: k === Infinity ? 0 : k, unicas, enRiesgo, cols: act.map(x => x.c) };
+  if (conGrupos) {
+    res.lista = Array.from(grupos.entries()).filter(e => e[1].n < umbral).sort((a, b) => a[1].n - b[1].n).slice(0, 40)
+      .map(e => ({ valores: e[0].split("¦").map(rkVer), n: e[1].n, filas: e[1].f }));
+  }
+  return res;
+}
+
+const rkPausa = () => new Promise(r => setTimeout(r, 0));
+
+async function rkCalcular() {
+  const turno = ++RK.turno;
+  const sheet = RK.sheet, umbral = parseInt($("rkUmbral").value) || 5, gran = rkGranActual();
+  const cols = sheet.cols.filter(c => c.quasi);
+  const estados = cols.map(rkEstado);
+
+  // Chips de columnas
+  const etiqueta = { raw: "sin proteger", gen: "generalizada", mask: "enmascarada", neutral: "neutralizada" };
+  $("rkCols").innerHTML = sheet.cols.map(c => {
+    const e = rkEstado(c);
+    return `<label class="rk-chip ${c.quasi ? "on" : ""} ${c.quasi && e === "neutral" ? "neu" : ""}"><input type="checkbox" data-rkcol="${c.idx}" ${c.quasi ? "checked" : ""}> ${escapeHtml(c.header || "(sin nombre)")}${c.quasi ? ` <small>${etiqueta[e]}</small>` : ""}</label>`;
+  }).join("");
+
+  if (!cols.length) {
+    $("rkStats").innerHTML = ""; $("rkSug").innerHTML = ""; $("rkRaras").innerHTML = "";
+    rkVeredicto("wait", "?", "Elige las columnas", "Marca arriba las columnas que, combinadas, podrían servir para reconocer a una persona (edad, sexo, código postal, municipio, fechas…).");
+    return;
+  }
+  rkVeredicto("wait", "…", "Calculando…", "Se están contando las combinaciones de la hoja en tu equipo.");
+  await rkPausa(); await rkPausa();
+  if (turno !== RK.turno) return;
+
+  const base = rkMedir(cols, estados, gran, umbral, true);
+  if (base.sinCols) {
+    $("rkStats").innerHTML = ""; $("rkSug").innerHTML = '<div class="rk-vacio">No hace falta ningún cambio.</div>'; $("rkRaras").innerHTML = "";
+    rkVeredicto("ok", "✓", "RIESGO BAJO", "Todas las columnas marcadas quedan neutralizadas (datos ficticios, hash, sustitución o supresión): en la salida ya no hay ninguna combinación real que permita reconocer a nadie.");
+    return;
+  }
+  const pct = base.filas ? Math.round(base.enRiesgo / base.filas * 1000) / 10 : 0;
+  const tono = v => v ? (base.unicas ? "bad" : "mid") : "good";
+  $("rkStats").innerHTML =
+    `<div class="rk-stat ${base.k >= umbral ? "good" : base.k >= 2 ? "mid" : "bad"}"><b>${base.k}</b><span>k mínimo</span></div>` +
+    `<div class="rk-stat ${base.unicas ? "bad" : "good"}"><b>${base.unicas.toLocaleString("es-ES")}</b><span>filas únicas</span></div>` +
+    `<div class="rk-stat ${tono(base.enRiesgo)}"><b>${base.enRiesgo.toLocaleString("es-ES")}</b><span>filas en grupos &lt; ${umbral}</span></div>` +
+    `<div class="rk-stat ${tono(base.enRiesgo)}"><b>${pct.toLocaleString("es-ES")} %</b><span>de ${base.filas.toLocaleString("es-ES")} filas</span></div>`;
+
+  const nombres = base.cols.map(c => "«" + escapeHtml(c.header) + "»").join(", ");
+  if (!base.enRiesgo) rkVeredicto("ok", "✓", "RIESGO BAJO", `Cada combinación de ${nombres} aparece al menos ${umbral} veces: nadie destaca dentro de su grupo.`);
+  else if (base.unicas) rkVeredicto("err", "!", "RIESGO ALTO", `<strong>${base.unicas.toLocaleString("es-ES")} fila(s)</strong> tienen una combinación única de ${nombres}: quien conozca esos datos de una persona podría reconocerla en el archivo.`);
+  else rkVeredicto("warn", "!", "RIESGO MEDIO", `No hay filas únicas, pero ${base.enRiesgo.toLocaleString("es-ES")} fila(s) están en grupos de menos de ${umbral} con la misma combinación de ${nombres}.`);
+
+  // Combinaciones más raras
+  $("rkRaras").innerHTML = base.lista.length
+    ? `<table class="prev"><thead><tr>${base.cols.map(c => `<th>${escapeHtml(c.header)}</th>`).join("")}<th>Filas</th><th>Nº de fila en Excel</th></tr></thead><tbody>` +
+      base.lista.map(g => `<tr>${g.valores.map(v => `<td>${escapeHtml(v)}</td>`).join("")}<td><strong>${g.n}</strong></td><td>${g.filas.slice(0, 5).join(", ")}${g.n > 5 ? "…" : ""}</td></tr>`).join("") + "</tbody></table>"
+    : '<div class="rk-vacio">Ninguna combinación por debajo del umbral.</div>';
+
+  // Qué cambio reduce más el riesgo
+  if (!base.enRiesgo) { $("rkSug").innerHTML = '<div class="rk-vacio">✓ No hace falta ningún cambio con este umbral.</div>'; return; }
+  $("rkSug").innerHTML = '<div class="rk-vacio">Probando alternativas…</div>';
+  const props = [];
+  for (let i = 0; i < cols.length; i++) {
+    const c = cols[i]; if (estados[i] === "neutral") continue;
+    const tipo = rkTipo(c), niv = RK_NIVELES[tipo];
+    if (niv) {
+      const actual = estados[i] === "gen" ? niv.ids.indexOf(gran[niv.campo]) : -1;
+      for (let n = actual + 1; n < niv.ids.length; n++) {
+        const g2 = Object.assign({}, gran, { [niv.campo]: niv.ids[n] });
+        const e2 = estados.slice(); e2[i] = "gen";
+        const m = rkMedir(cols, e2, g2, umbral, false);
+        const otras = cols.some((o, j) => j !== i && estados[j] === "gen" && rkTipo(o) === tipo);
+        props.push({ m, orden: 0, texto: `Generalizar «${escapeHtml(c.header)}» ${niv.txt[niv.ids[n]]}`,
+          nota: (gran[niv.campo] !== niv.ids[n] && (otras || estados[i] === "gen")) ? `Cambia la granularidad de ${niv.nombre} en todo el lote.` : "",
+          aplicar: { idx: c.idx, modo: "generaliza", sel: niv.sel, campo: niv.campo, valor: niv.ids[n] } });
+        await rkPausa(); if (turno !== RK.turno) return;
+      }
+    }
+    const e3 = estados.slice(); e3[i] = "neutral";
+    props.push({ m: rkMedir(cols, e3, gran, umbral, false), orden: 1, texto: `Suprimir «${escapeHtml(c.header)}»`, nota: "Se pierde el dato de esa columna.",
+      aplicar: { idx: c.idx, modo: "supresion" } });
+    await rkPausa(); if (turno !== RK.turno) return;
+  }
+  const kDe = m => m.sinCols ? Infinity : m.k;
+  const utiles = props.filter(p => p.m.enRiesgo < base.enRiesgo || p.m.unicas < base.unicas || kDe(p.m) > base.k)
+    .sort((a, b) => a.m.enRiesgo - b.m.enRiesgo || a.m.unicas - b.m.unicas || kDe(b.m) - kDe(a.m) || a.orden - b.orden).slice(0, 8);
+  RK.props = utiles;
+  $("rkSug").innerHTML = utiles.length
+    ? utiles.map((p, i) => `<div class="rk-prop"><div class="rk-prop-t"><strong>${p.texto}</strong>
+        <span>Filas en riesgo: ${base.enRiesgo.toLocaleString("es-ES")} → <b class="${p.m.enRiesgo ? "" : "cero"}">${p.m.enRiesgo.toLocaleString("es-ES")}</b> · únicas: ${base.unicas.toLocaleString("es-ES")} → ${p.m.unicas.toLocaleString("es-ES")} · k mínimo: ${base.k} → ${p.m.sinCols ? "—" : p.m.k}</span>
+        ${p.nota ? `<em>${p.nota}</em>` : ""}</div><button class="btn-mini" data-rkprop="${i}">Aplicar</button></div>`).join("")
+    : '<div class="rk-vacio">Ningún cambio de una sola columna reduce el riesgo. Prueba a suprimir filas atípicas en origen o a combinar varias generalizaciones.</div>';
+}
+
+function rkVeredicto(estado, icono, titulo, texto) {
+  const el = $("rkVerdict");
+  el.className = "int-verdict " + estado;
+  el.innerHTML = `<div class="vi">${icono}</div><div class="vb"><div class="vt">${titulo}</div><div class="vs">${texto}</div></div>`;
+}
+
+function rkAbrir() {
+  const file = STATE.files[STATE.fileIndex]; if (!file) return;
+  const sheet = file.sheets[STATE.currentSheet], ws = file.workbook.getWorksheet(sheet.name);
+  RK.sheet = sheet; RK.ws = ws; RK.n = Math.max(0, ws.rowCount - 1); RK.raw = {}; RK.cache = {};
+  $("rkHoja").textContent = "«" + sheet.name + "» · " + file.name;
+  $("rkOverlay").classList.add("open");
+  rkCalcular();
+}
+function rkRefrescarConfig() {
+  STATE.perfilActivo = null;
+  const list = $("colsList"); if (list) list.dataset.sheetKey = "";   // fuerza repintar las etiquetas «cuasi»
+  renderConfigUI();
+}
+
+window.addEventListener("load", () => {
+  $("riskBtn").onclick = rkAbrir;
+  $("rkClose").onclick = $("rkCerrar").onclick = () => $("rkOverlay").classList.remove("open");
+  $("rkOverlay").addEventListener("click", e => {
+    if (e.target === $("rkOverlay")) { $("rkOverlay").classList.remove("open"); return; }
+    const b = e.target.closest("[data-rkprop]");
+    if (!b || !RK.props) return;
+    const a = RK.props[+b.dataset.rkprop].aplicar, col = RK.sheet.cols[a.idx];
+    col.on = true; col.mode = a.modo;
+    if (a.sel) { $(a.sel).value = a.valor; STATE.granularity[a.campo] = a.valor; }
+    rkRefrescarConfig(); rkCalcular();
+  });
+  $("rkCols").addEventListener("change", e => {
+    const i = e.target.dataset.rkcol; if (i == null) return;
+    RK.sheet.cols[+i].quasi = e.target.checked;
+    rkRefrescarConfig(); rkCalcular();
+  });
+  $("rkUmbral").onchange = rkCalcular;
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("rkOverlay").classList.remove("open"); });
+});
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   TABLA DE CORRESPONDENCIA CIFRADA (v15)
+   Opcional. Al anonimizar, guarda APARTE y protegida con contraseña la
+   equivalencia «dato real ↔ dato anonimizado» de cada celda sustituida,
+   para poder consultar o deshacer la seudonimización si un comité o el
+   responsable del tratamiento lo autoriza.
+   · Cifrado: AES-256-GCM. Clave derivada de la contraseña con
+     PBKDF2-SHA-256 (600.000 iteraciones, sal aleatoria de 16 bytes).
+   · La contraseña no se guarda en ningún sitio: si se pierde, la tabla
+     es irrecuperable.
+   · Mientras exista la tabla, el archivo de salida está SEUDONIMIZADO
+     (RGPD art. 4.5), no anonimizado.
+   ══════════════════════════════════════════════════════════════════════ */
+const CORR_ITER = 600000, CORR_FORMATO = "anonimizador-correspondencia";
+const CR = { tabla: null, filas: null, nombre: "", salida: null };
+
+const corrCod = v => (v instanceof Date) ? { d: v.getTime() } : (v !== null && typeof v === "object" ? String(v) : v);
+const corrDec = v => (v && typeof v === "object" && "d" in v) ? new Date(v.d) : v;
+const corrVer = v => { v = corrDec(v); return v == null || v === "" ? "(vacío)" : (v instanceof Date ? v.toISOString().slice(0, 10) : String(v)); };
+
+function corrB64(bytes) { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+function corrDeB64(txt) { const bin = atob(txt), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+async function corrGzip(bytes, descomprimir) {
+  const cs = descomprimir ? new DecompressionStream("gzip") : new CompressionStream("gzip");
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(cs)).arrayBuffer());
+}
+async function corrClave(pw, salt, iter) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+
+/* ── Registro durante la anonimización ── */
+function corrNueva(file) {
+  return {
+    v: 1, app: "Anonimizador RGPD v15", creado: new Date().toISOString(), archivoOrigen: file.name, hashOrig: file.hashOrig,
+    hojas: {}, n: 0,
+    reg(hoja, R, C, cabecera, modo, original, nuevo) {
+      const h = this.hojas[hoja] || (this.hojas[hoja] = {});
+      const c = h[C] || (h[C] = { cabecera, modo, filas: new Map() });
+      const previo = c.filas.get(R);
+      if (previo) previo[1] = corrCod(nuevo);                 // misma celda tocada dos veces: se conserva el original primero
+      else { c.filas.set(R, [corrCod(original), corrCod(nuevo)]); this.n++; }
+    }
+  };
+}
+
+async function corrCifrar(corr, pw, meta) {
+  const claro = {
+    v: 1, app: corr.app, creado: corr.creado, archivoOrigen: corr.archivoOrigen, hashOrig: corr.hashOrig,
+    archivoSalida: meta.outName, hashOut: meta.hashOut, registros: corr.n,
+    hojas: Object.keys(corr.hojas).map(nombre => ({
+      nombre, cols: Object.keys(corr.hojas[nombre]).map(C => {
+        const c = corr.hojas[nombre][C];
+        return { c: +C, cabecera: c.cabecera, modo: c.modo, filas: Array.from(c.filas.entries()).map(e => [e[0], e[1][0], e[1][1]]) };
+      })
+    }))
+  };
+  let datos = new TextEncoder().encode(JSON.stringify(claro)), gzip = false;
+  if (typeof CompressionStream !== "undefined") { try { datos = await corrGzip(datos, false); gzip = true; } catch (e) { /* se guarda sin comprimir */ } }
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const clave = await corrClave(pw, salt, CORR_ITER);
+  const cifrado = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, clave, datos));
+  const sobre = {
+    formato: CORR_FORMATO, v: 1, aviso: "Tabla de correspondencia cifrada del Anonimizador RGPD. Contiene datos personales: custodiar separada del archivo anonimizado.",
+    cifrado: "AES-256-GCM", kdf: "PBKDF2-SHA-256", iter: CORR_ITER, gzip,
+    creado: corr.creado, archivoSalida: meta.outName, hashOut: meta.hashOut,
+    salt: corrB64(salt), iv: corrB64(iv), datos: corrB64(cifrado)
+  };
+  return new Blob([JSON.stringify(sobre)], { type: "application/json" });
+}
+
+async function corrDescifrar(texto, pw) {
+  let sobre;
+  try { sobre = JSON.parse(texto); } catch (e) { throw new Error("Ese archivo no es una tabla de correspondencia de esta aplicación."); }
+  if (!sobre || sobre.formato !== CORR_FORMATO) throw new Error("Ese archivo no es una tabla de correspondencia de esta aplicación.");
+  const clave = await corrClave(pw, corrDeB64(sobre.salt), sobre.iter || CORR_ITER);
+  let datos;
+  try { datos = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: corrDeB64(sobre.iv) }, clave, corrDeB64(sobre.datos))); }
+  catch (e) { throw new Error("Contraseña incorrecta (o el archivo de la tabla está dañado)."); }
+  if (sobre.gzip) {
+    if (typeof DecompressionStream === "undefined") throw new Error("Este navegador es demasiado antiguo para abrir la tabla. Usa una versión reciente de Chrome, Edge, Firefox o Safari.");
+    datos = await corrGzip(datos, true);
+  }
+  return JSON.parse(new TextDecoder().decode(datos));
+}
+
+/* ── Pedir la contraseña antes de anonimizar ── */
+let corrResolver = null;
+function corrPedirClave() {
+  $("ckPw1").value = ""; $("ckPw2").value = ""; $("ckMsg").textContent = ""; $("ckVer").checked = false;
+  $("ckPw1").type = $("ckPw2").type = "password";
+  $("ckOverlay").classList.add("open");
+  setTimeout(() => $("ckPw1").focus(), 60);
+  return new Promise(res => { corrResolver = res; });
+}
+function corrCerrarClave(valor) {
+  $("ckOverlay").classList.remove("open");
+  $("ckPw1").value = ""; $("ckPw2").value = "";
+  if (corrResolver) { const r = corrResolver; corrResolver = null; r(valor); }
+}
+
+/* ── Ventana «Tabla de correspondencia»: abrir, buscar y restaurar ── */
+function crAbierta() { const o = $("crOverlay"); return !!o && o.classList.contains("open"); }
+function crEstado(tipo, html) { const e = $("crEstado"); e.className = "int-det " + tipo; e.innerHTML = html; }
+
+let crArchivoTabla = null;
+function crElegirTabla(f) {
+  if (!f) return;
+  crArchivoTabla = f; $("crDropTTxt").textContent = f.name;
+  crEstado("", ""); $("crAbrir").disabled = false; $("crPw").focus();
+}
+
+async function crAbrirTabla() {
+  if (!crArchivoTabla) return;
+  const pw = $("crPw").value;
+  if (!pw) { crEstado("warn", "⚠ Escribe la contraseña de la tabla."); return; }
+  crEstado("ok", "Descifrando…"); $("crAbrir").disabled = true;
+  try {
+    const t = await corrDescifrar(await crArchivoTabla.text(), pw);
+    CR.tabla = t; CR.nombre = crArchivoTabla.name; CR.salida = null;
+    CR.filas = [];
+    t.hojas.forEach(h => h.cols.forEach(c => c.filas.forEach(f => CR.filas.push({ h: h.nombre, col: c.cabecera, C: c.c, R: f[0], o: corrVer(f[1]), n: corrVer(f[2]) }))));
+    $("crPw").value = "";
+    crEstado("ok", `✓ Tabla abierta: <strong>${t.registros.toLocaleString("es-ES")}</strong> celdas registradas.<br>Archivo anonimizado: «${escapeHtml(t.archivoSalida)}»<br>Origen: «${escapeHtml(t.archivoOrigen)}» · creada el ${escapeHtml(new Date(t.creado).toLocaleString("es-ES"))}`);
+    $("crDerecha").classList.remove("crOff");
+    $("crBuscar").value = ""; $("crRestMsg").innerHTML = ""; $("crDropXTxt").textContent = "Suelta aquí el archivo anonimizado (.xlsx)";
+    crPintar();
+  } catch (e) {
+    crEstado("warn", "⚠ " + escapeHtml(e.message));
+  }
+  $("crAbrir").disabled = false;
+}
+
+function crPintar() {
+  if (!CR.filas) { $("crTabla").innerHTML = ""; return; }
+  const q = $("crBuscar").value.trim().toLowerCase();
+  const res = q ? CR.filas.filter(f => f.o.toLowerCase().includes(q) || f.n.toLowerCase().includes(q)) : CR.filas;
+  const ver = res.slice(0, 100);
+  $("crCuenta").textContent = q ? `${res.length.toLocaleString("es-ES")} coincidencia(s)` + (res.length > 100 ? " · se muestran 100" : "") : `Primeras ${ver.length} de ${CR.filas.length.toLocaleString("es-ES")}`;
+  $("crTabla").innerHTML = ver.length
+    ? `<table class="prev"><thead><tr><th>Hoja</th><th>Columna</th><th>Fila</th><th>Dato anonimizado</th><th>Dato real</th></tr></thead><tbody>` +
+      ver.map(f => `<tr><td>${escapeHtml(f.h)}</td><td>${escapeHtml(f.col)}</td><td>${f.R}</td><td>${escapeHtml(f.n)}</td><td><strong>${escapeHtml(f.o)}</strong></td></tr>`).join("") + "</tbody></table>"
+    : '<div class="rk-vacio">Sin coincidencias.</div>';
+}
+
+/* Devuelve los datos reales a un archivo anonimizado. Si el archivo es
+   exactamente el que generó la app (misma huella SHA-256) se restaura todo;
+   si ha cambiado, solo las celdas que siguen teniendo el valor anonimizado. */
+async function crRestaurar(f) {
+  if (!f || !CR.tabla) return;
+  const msg = $("crRestMsg");
+  if (!/\.xlsx$/i.test(f.name)) { msg.innerHTML = '<div class="int-det warn" style="display:block">⚠ Tiene que ser el archivo .xlsx anonimizado que generó la aplicación.</div>'; return; }
+  $("crDropXTxt").textContent = f.name;
+  msg.innerHTML = '<div class="int-det ok" style="display:block">Restaurando…</div>';
+  try {
+    const buf = await f.arrayBuffer();
+    const exacto = (await sha256Hex(buf)) === CR.tabla.hashOut;
+    const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+    let hechas = 0, saltadas = 0, sinHoja = 0;
+    for (const h of CR.tabla.hojas) {
+      const ws = wb.getWorksheet(h.nombre);
+      if (!ws) { h.cols.forEach(c => sinHoja += c.filas.length); continue; }
+      for (const c of h.cols) {
+        for (const fila of c.filas) {
+          const cell = ws.getRow(fila[0]).getCell(c.c);
+          if (!exacto && rkClave(valorCrudo(cell)) !== rkClave(corrDec(fila[2]))) { saltadas++; continue; }
+          const estilo = estiloAisladoDeCelda(cell);
+          if (estilo.font && estilo.font.strike) { estilo.font = Object.assign({}, estilo.font); delete estilo.font.strike; delete estilo.font.color; }
+          const fg = estilo.fill && estilo.fill.fgColor && estilo.fill.fgColor.argb;
+          if (fg === "FFFFF59D" || fg === "FFFFE082") delete estilo.fill;
+          cell.value = corrDec(fila[1]); cell.style = estilo;
+          if (cell.note) cell.note = undefined;
+          hechas++;
+          if (hechas % 5000 === 0) await new Promise(r => setTimeout(r, 0));
+        }
+      }
+    }
+    const resumen = wb.getWorksheet("Anonimización"); if (resumen) wb.removeWorksheet(resumen.id);
+    const out = await wb.xlsx.writeBuffer();
+    const nombre = f.name.replace(/_anonimizado(?=\.xlsx$)/i, "").replace(/\.xlsx$/i, "") + "_restaurado.xlsx";
+    CR.salida = { blob: new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), nombre };
+    const aviso = exacto ? "El archivo es exactamente el que generó la aplicación (misma huella SHA-256)."
+      : "⚠ El archivo <strong>no es idéntico</strong> al que generó la aplicación (se ha modificado o guardado de nuevo): solo se han restaurado las celdas que conservaban el valor anonimizado.";
+    msg.innerHTML = `<div class="int-det ${exacto && !sinHoja ? "ok" : "warn"}" style="display:block">${aviso}<br>Celdas restauradas: <strong>${hechas.toLocaleString("es-ES")}</strong>` +
+      (saltadas ? ` · no restauradas por haber cambiado: <strong>${saltadas.toLocaleString("es-ES")}</strong>` : "") +
+      (sinHoja ? ` · en hojas que ya no existen: <strong>${sinHoja.toLocaleString("es-ES")}</strong>` : "") +
+      `</div><button class="btn btn-primary" id="crBajar" style="margin-top:8px;padding:10px;font-size:.9rem">⬇ Descargar «${escapeHtml(nombre)}»</button>
+       <div class="rk-nota" style="display:block">El archivo restaurado vuelve a contener datos personales reales: trátalo como el original.</div>`;
+    $("crBajar").onclick = () => downloadBlob(CR.salida.blob, CR.salida.nombre);
+  } catch (e) {
+    console.error(e);
+    msg.innerHTML = `<div class="int-det warn" style="display:block">⚠ No se ha podido restaurar: ${escapeHtml(e.message || String(e))}</div>`;
+  }
+}
+
+function crOlvidar() {
+  CR.tabla = null; CR.filas = null; CR.salida = null; crArchivoTabla = null;
+  $("crPw").value = ""; $("crBuscar").value = ""; $("crTabla").innerHTML = ""; $("crCuenta").textContent = ""; $("crRestMsg").innerHTML = "";
+  $("crDropTTxt").textContent = "Suelta aquí la tabla (.anoncorr)"; $("crDropXTxt").textContent = "Suelta aquí el archivo anonimizado (.xlsx)";
+  $("crAbrir").disabled = true; $("crDerecha").classList.add("crOff"); crEstado("", "");
+}
+function crSoltarGlobal(files) {
+  const f = files && files[0]; if (!f) return;
+  if (/\.xlsx$/i.test(f.name) && CR.tabla) crRestaurar(f); else crElegirTabla(f);
+}
+
+window.addEventListener("load", () => {
+  // Contraseña al anonimizar
+  $("ckVer").onchange = e => { $("ckPw1").type = $("ckPw2").type = e.target.checked ? "text" : "password"; };
+  $("ckCancel").onclick = $("ckClose").onclick = () => corrCerrarClave(null);
+  const aceptar = () => {
+    const a = $("ckPw1").value, b = $("ckPw2").value;
+    if (a.length < 10) { $("ckMsg").textContent = "La contraseña debe tener al menos 10 caracteres."; return; }
+    if (a !== b) { $("ckMsg").textContent = "Las dos contraseñas no coinciden."; return; }
+    corrCerrarClave(a);
+  };
+  $("ckOk").onclick = aceptar;
+  [$("ckPw1"), $("ckPw2")].forEach(i => i.addEventListener("keydown", e => { if (e.key === "Enter") aceptar(); }));
+
+  // Ventana de la tabla
+  $("crOpen").onclick = () => $("crOverlay").classList.add("open");
+  const cerrar = () => { $("crOverlay").classList.remove("open"); crOlvidar(); };
+  $("crClose").onclick = $("crCerrar").onclick = cerrar;
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && crAbierta()) cerrar(); });
+  const zona = (el, alSoltar) => {
+    el.addEventListener("dragover", e => { e.preventDefault(); e.stopPropagation(); el.classList.add("over"); });
+    el.addEventListener("dragleave", () => el.classList.remove("over"));
+    el.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); el.classList.remove("over"); if (e.dataTransfer.files && e.dataTransfer.files.length) alSoltar(e.dataTransfer.files[0]); });
+  };
+  zona($("crDropT"), crElegirTabla); zona($("crDropX"), crRestaurar);
+  $("crDropT").onclick = () => $("crFileT").click();
+  $("crDropX").onclick = () => $("crFileX").click();
+  $("crFileT").onchange = e => { crElegirTabla(e.target.files[0]); e.target.value = ""; };
+  $("crFileX").onchange = e => { crRestaurar(e.target.files[0]); e.target.value = ""; };
+  $("crAbrir").onclick = crAbrirTabla;
+  $("crPw").addEventListener("keydown", e => { if (e.key === "Enter") crAbrirTabla(); });
+  let espera = null;
+  $("crBuscar").addEventListener("input", () => { clearTimeout(espera); espera = setTimeout(crPintar, 200); });
 });
 </script>
 </body>
