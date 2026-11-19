@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anonimizador Word (.docx) — v1 (RGPD/LOPDGDD)</title>
+<title>Anonimizador Word (.docx) — v2 (RGPD/LOPDGDD)</title>
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -232,7 +232,7 @@
 <body>
 
 <header class="hdr">
-  <div class="logo"><span class="dot"></span> Anonimizador Word <span class="ver">v1</span></div>
+  <div class="logo"><span class="dot"></span> Anonimizador Word <span class="ver">v2</span></div>
   <span class="tag">Documentos .docx · RGPD/LOPDGDD</span>
   <div class="badge">
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -355,7 +355,7 @@
 <!-- MODAL AYUDA -->
 <div class="movl" id="helpOverlay">
   <div class="modal">
-    <div class="mhd"><span style="font-size:1.25rem">📖</span><h2>Ayuda · Anonimizador Word v1</h2><button class="mcl" id="helpClose">✕</button></div>
+    <div class="mhd"><span style="font-size:1.25rem">📖</span><h2>Ayuda · Anonimizador Word v2</h2><button class="mcl" id="helpClose">✕</button></div>
     <div class="mtabs">
       <button class="mtab active" data-tab="guia">🗂 Cómo se usa</button>
       <button class="mtab" data-tab="limites">⚠️ Límites</button>
@@ -422,10 +422,25 @@ function fakeNombre(){ return Math.random()<0.5?r(NOMBRES_M):r(NOMBRES_F); }
 function fakeEmail(){ return (r(NOMBRES_M)+"."+r(APELLIDOS)).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")+rint(1,99)+"@"+r(DOMINIOS); }
 function fakeTarjetaDigitos(){ const body="4"+digitos(14); let sum=0; for(let i=0;i<body.length;i++){ let d=+body[body.length-1-i]; if(i%2===0){d*=2; if(d>9)d-=9;} sum+=d;} return body+((10-(sum%10))%10); }
 function fakeMatricula(){ return rint(1000,9999)+" "+r(["BBC","BBD","BBF","CCG","CCH","CCK","CCN","DDP","DDR"]); }
-function fakeNombreN(n){ // n = nº de palabras del original (sin partículas)
+function fakeNombreN(n, genero){ // n = nº de palabras del original (sin partículas); genero: "m", "f" o undefined
   if(n<=1) return r(APELLIDOS);
   const ap = Math.min(n-1,3);
-  return fakeNombre()+" "+Array.from({length:ap},()=>r(APELLIDOS)).join(" ");
+  const pila = genero==="f" ? r(NOMBRES_F) : genero==="m" ? r(NOMBRES_M) : fakeNombre();
+  return pila+" "+Array.from({length:ap},()=>r(APELLIDOS)).join(" ");
+}
+/* v2: el nombre ficticio conserva el género del original («Dña. Lucía…» no pasa a «Dña. Pedro…»).
+   Se decide por el nombre de pila: listas conocidas y, si no está, por la terminación. */
+const sinTildes = w => String(w||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const SET_F = new Set(NOMBRES_F.map(sinTildes).concat(["mª","m.ª","maria","josefa","francisca","antonia","dolores","mercedes","concepcion","rosario","encarnacion","rocio","inmaculada","beatriz","ines","nieves","esther","raquel","noelia","miriam","irene","araceli","remedios","angeles","consuelo","soledad","montserrat","lourdes","belen","carmen","isabel","pilar"]));
+const SET_M = new Set(NOMBRES_M.map(sinTildes).concat(["jose","juan","luis","jesus","andres","joaquin","ramon","vicente","enrique","jorge","alberto","ruben","ivan","oscar","victor","adrian","hugo","mario","diego","raul","sergio","pablo","alvaro","ignacio","salvador","tomas","agustin","felipe","emilio","julian","gabriel","samuel","ismael","josemaria"]));
+function generoDe(valor){
+  const w = sinTildes(String(valor||"").trim().split(/\s+/)[0]);
+  if(!w) return undefined;
+  if(SET_F.has(w)) return "f";
+  if(SET_M.has(w)) return "m";
+  if(/a$/.test(w)) return "f";
+  if(/o$/.test(w)) return "m";
+  return undefined;
 }
 
 /* ══════════════════════════════════════════
@@ -446,9 +461,10 @@ const TIPOS = {
   fecha:    {etq:"Fecha",                tag:"FECHA"},
   cp:       {etq:"Código postal",        tag:"CP"},
   matricula:{etq:"Matrícula",            tag:"MATRÍCULA"},
+  colegiado:{etq:"Nº de colegiado",      tag:"Nº COLEGIADO"},
 };
 const ORDEN_TIPOS = Object.keys(TIPOS);
-const TIPOS_NUM = new Set(["dni","nie","tel","nhc","nuhsa","nss","iban","tarjeta","matricula","cp"]);
+const TIPOS_NUM = new Set(["dni","nie","tel","nhc","nuhsa","nss","iban","tarjeta","matricula","cp","colegiado"]);
 
 /* ══════════════════════════════════════════
    NORMALIZACIÓN (1 carácter → 1 carácter, para conservar posiciones)
@@ -488,6 +504,7 @@ const REGLAS = [
   {tipo:"nhc",    re:/(?<![\p{L}\d])(?:NHC|N\.H\.C\.?|Historia\s+cl[ií]nica|HC|N[ºo°]\.?\s*(?:de\s+)?historia)(?:\s*n[ºo°]\.?)?[\s:.\-#]*((?=[A-Za-z0-9\-\/]*\d)[A-Za-z0-9][A-Za-z0-9\-\/]{3,14})/giud, grupo:1},
   {tipo:"nss",    re:/(?<![\p{L}\d])(?:N[ºo°]\.?\s*(?:de\s+)?(?:la\s+)?Seguridad\s+Social|Seguridad\s+Social|NSS|N\.S\.S\.?|afiliaci[oó]n)[\s:.\-nº°]*(\d(?:[ \/\-]?\d){9,11})(?!\d)/giud, grupo:1},
   {tipo:"nss",    re:/(?<![\d])\d{2}[ \/\-]\d{8,10}[ \/\-]\d{2}(?!\d)/gud},
+  {tipo:"colegiado", re:/(?<![\p{L}\d])(?:colegiad[oa]|n[ºo°]\.?\s*col\.?|CNP)(?:\s+n[ºo°]\.?)?[\s:.\-]*(\d{5,10})(?!\d)/giud, grupo:1},   // v2
   {tipo:"dni",    re:/(?<![\p{L}\d.])(?:\d{8}|\d{2}\.\d{3}\.\d{3})[ \-]?[A-HJ-NP-TV-Z](?![\p{L}\d])/giud},
   {tipo:"nie",    re:/(?<![\p{L}\d])[XYZ][ \-]?\d{7}[ \-]?[A-Z](?![\p{L}\d])/giud},
   {tipo:"tel",    re:/(?<![\d])(?:(?:\+|00)34[ .\-]?)?[6789]\d{2}(?:[ .\-]?\d{3}[ .\-]?\d{3}|[ .\-]?\d{2}[ .\-]?\d{2}[ .\-]?\d{2})(?!\d)/gud},
@@ -645,6 +662,41 @@ function recogerParrafos(raiz){
   return ps;
 }
 
+/* v2 — Tablas con cabecera de columna («Nombre y apellidos» | «DNI» | …): las celdas
+   que están debajo de una cabecera de persona se tratan como nombres, aunque no lleven
+   «D.», «Dra.» ni etiqueta delante. Se mira la primera fila de la tabla. */
+const RE_CAB_PERSONA = /^(?:nombres?(?: y apellidos| completo)?|apellidos?(?: y nombres?)?|pacientes?|usuari[oa]s?|m[eé]dic[oa]s?|facultativ[oa]s?|enfermer[oa]s?|profesional(?:es)?|familiar(?:es)?|persona(?: de contacto)?|titular(?:es)?|interesad[oa]s?|trabajador(?:a|es|as)?|responsables?|asistentes?|participantes?|alumn[oa]s?|declarantes?|firmantes?|tutor(?:a|es)?|autor(?:a|es)?)\s*:?$/i;
+const ETQ_COLUMNA = "Nombre y apellidos";
+const cacheTablas = new WeakMap();
+function hijosW(el, nombre){ const out=[]; for(let i=0;i<el.childNodes.length;i++){ const c=el.childNodes[i]; if(c.nodeType===1 && esW(c,nombre)) out.push(c); } return out; }
+function anchoCelda(tc){
+  const pr=hijosW(tc,"tcPr")[0]; if(!pr) return 1;
+  const gs=hijosW(pr,"gridSpan")[0]; if(!gs) return 1;
+  const v=parseInt(gs.getAttribute("w:val")||gs.getAttributeNS(NS_W,"val")||"1",10);
+  return v>0?v:1;
+}
+function textoCelda(tc){ return recogerParrafos(tc).map(p=>construirParrafo(p).texto).join(" ").replace(/\s+/g," ").trim(); }
+function enColumnaNombre(p){
+  let tc=p.parentNode;
+  while(tc && !(tc.nodeType===1 && esW(tc,"tc"))) tc=tc.parentNode;
+  if(!tc) return false;
+  const tr=tc.parentNode; if(!tr || !esW(tr,"tr")) return false;
+  const tbl=tr.parentNode; if(!tbl || !esW(tbl,"tbl")) return false;
+  let info=cacheTablas.get(tbl);
+  if(!info){
+    const filas=hijosW(tbl,"tr"); const cols=new Set();
+    if(filas.length>1){
+      let i=0;
+      for(const c of hijosW(filas[0],"tc")){ if(RE_CAB_PERSONA.test(textoCelda(c))) cols.add(i); i+=anchoCelda(c); }
+    }
+    info={cabecera:filas[0]||null, cols}; cacheTablas.set(tbl,info);
+  }
+  if(!info.cols.size || tr===info.cabecera) return false;
+  let i=0;
+  for(const c of hijosW(tr,"tc")){ if(c===tc) return info.cols.has(i); i+=anchoCelda(c); }
+  return false;
+}
+
 /**
  * Construye la vista de texto de un párrafo: concatena el texto de sus
  * <w:t>/<w:delText> y guarda, para cada carácter, a qué nodo pertenece y en
@@ -726,7 +778,7 @@ function crearSustituidor(modo, terminos, evitar, clavesOriginales){   // evitar
     switch(tipo){
       case "nombre": case "termino": {
         const n=valor.split(/\s+/).filter(w=>w && !PARTICULAS.has(w.toLowerCase())).length;
-        return fakeNombreN(Math.max(1,n));
+        return fakeNombreN(Math.max(1,n), tipo==="nombre" ? generoDe(valor) : undefined);
       }
       case "dni": return fakeDNI();
       case "nie": return fakeNIE();
@@ -740,6 +792,7 @@ function crearSustituidor(modo, terminos, evitar, clavesOriginales){   // evitar
       case "fecha": return {d:rint(1,28), m:rint(1,12), y:rint(1940,2005)};
       case "cp": return "14"+digitos(3);
       case "matricula": return fakeMatricula();
+      case "colegiado": return digitos(Math.max(5,Math.min(10,contarDigitos(valor))));
     }
     return "XXXX";
   }
@@ -747,7 +800,7 @@ function crearSustituidor(modo, terminos, evitar, clavesOriginales){   // evitar
   function formatear(tipo, c, valor){
     switch(tipo){
       case "nombre": case "termino": return (valor===valor.toUpperCase() && valor!==valor.toLowerCase()) ? c.toUpperCase() : c;
-      case "tel": case "nhc": case "nuhsa": case "nss": case "cp": case "tarjeta": return aplicarDigitos(valor,c);
+      case "tel": case "nhc": case "nuhsa": case "nss": case "cp": case "tarjeta": case "colegiado": return aplicarDigitos(valor,c);
       case "iban": return /[ \-]/.test(valor) ? agrupar4(c) : c;
       case "fecha": {
         let m;
@@ -844,7 +897,7 @@ async function leerDocx(buf){
       try{
         const doc=parseXml(xml);
         const ps=recogerParrafos(doc.documentElement);
-        partes.push({nombre:n, parrafos:ps.map(p=>construirParrafo(p).texto)});
+        partes.push({nombre:n, parrafos:ps.map(p=>construirParrafo(p).texto), colNombre:ps.map(enColumnaNombre)});
         recorrerElementos(doc.documentElement, e=>{
           if(e.namespaceURI!==NS_W) return;
           if((e.localName==="ins"||e.localName==="del"||e.localName==="moveFrom"||e.localName==="moveTo") && e.getAttribute("w:author")) b.cambios++;
@@ -860,10 +913,11 @@ async function leerDocx(buf){
 function recorrerDetecciones(partes, terminos, cb){
   for(const pt of partes){
     let previo="";
-    for(const t of pt.parrafos){
-      for(const m of detectarEnTexto(t,previo,terminos)) cb(m,t,pt.nombre);
+    pt.parrafos.forEach((t,i)=>{
+      const pv = (pt.colNombre && pt.colNombre[i]) ? ETQ_COLUMNA : previo;   // v2: columna de tabla con cabecera de persona
+      for(const m of detectarEnTexto(t,pv,terminos)) cb(m,t,pt.nombre);
       previo=t;
-    }
+    });
   }
 }
 
@@ -873,7 +927,7 @@ function anonimizarDOM(raiz, opc){
   let previo="";
   for(const p of recogerParrafos(raiz)){
     const info=construirParrafo(p);
-    const ms=detectarEnTexto(info.texto, previo, opc.terminos);
+    const ms=detectarEnTexto(info.texto, enColumnaNombre(p) ? ETQ_COLUMNA : previo, opc.terminos);
     previo=info.texto;
     const sel=[];
     for(const m of ms){
